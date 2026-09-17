@@ -1,4 +1,4 @@
-name: Patch Kzie POS frontend
+name: Sync Kzie products
 
 on:
   push:
@@ -8,54 +8,35 @@ permissions:
   contents: write
 
 jobs:
-  patch:
+  sync-products:
     if: ${{ !contains(github.event.head_commit.message, '[auto-patch]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch Accounts UI and product loading
+      - name: Build products.csv from Kzie product feed
         shell: bash
         run: |
+          curl -fsSL 'https://mffxrxjmznmchcametff.supabase.co/functions/v1/kzies-products' -o /tmp/products.json
           python - <<'PY'
+          import csv, json
           from pathlib import Path
-          import re
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          reps={
-            "Staff:'🛡️'":"Accounts:'👤'",
-            "...(S.profile.app_role==='Admin'?['Staff']:[])":"...(S.profile.app_role==='Admin'?['Accounts']:[])",
-            "if(t==='Staff'){staffView();return}":"if(t==='Accounts'){staffView();return}",
-            "<h2>Staff & Access</h2>":"<h2>Accounts</h2>",
-            "Username-based POS accounts":"Admin & Staff Accounts",
-            "No email invitations. Staff register with their name, username and password, then you approve them here.":"Manage Admin and Staff accounts, approvals, roles, and access here.",
-            "The account will appear in the Admin’s Staff page as <b>Pending</b> until approved.":"The account will appear in the Admin’s Accounts page as <b>Pending</b> until approved.",
-            "class=\"secondary\">Change My Password</button><button id=\"refreshStaff\" class=\"primary\"":"class=\"primary\">Change My Password</button><button id=\"refreshStaff\" class=\"secondary\""
-          }
-          for a,b in reps.items():
-              s=s.replace(a,b)
-
-          new_products = '''async function products(){
-           try{
-            const {data,error}=await sb.rpc('kzies_get_cached_products');
-            if(error) throw error;
-            const rows=Array.isArray(data)?data:[];
-            S.products=rows.map((x,i)=>{
-             const retail=x.retail==null?null:Number(x.retail),wholesale=x.wholesale==null?null:Number(x.wholesale),selling=retail?Math.round(retail*1.3):null;
-             return{id:x.id??i+1,brand:x.brand||'',name:x.name||'',retail,wholesale,notes:x.notes||'',selling,income:selling!=null&&wholesale!=null?selling-wholesale:null};
-            }).filter(x=>x.name);
-            if(!S.products.length) throw new Error('No products are available yet.');
-           }catch(e){console.error('Unable to load products',e);S.products=[]}
-          }
-          '''
-          s,n = re.subn(r"async function products\(\)\{.*?\n\}\n(?=async function staff\(\))", new_products, s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('Could not find products() function to patch')
-          p.write_text(s,encoding='utf-8')
+          data=json.loads(Path('/tmp/products.json').read_text(encoding='utf-8'))
+          rows=data.get('products') or []
+          if not rows:
+              raise SystemExit('Product feed returned no products')
+          with open('products.csv','w',encoding='utf-8',newline='') as f:
+              w=csv.writer(f)
+              w.writerow(['Brand','Product Name','Retail Price','Wholesale Price','Notes'])
+              for x in rows:
+                  retail='' if x.get('retail') is None else x.get('retail')
+                  wholesale='' if x.get('wholesale') is None else x.get('wholesale')
+                  w.writerow([x.get('brand',''),x.get('name',''),retail,wholesale,x.get('notes','')])
+          print(f'Wrote {len(rows)} products')
           PY
           git config user.name "ChatGPT Update Bot"
           git config user.email "actions@users.noreply.github.com"
-          if ! git diff --quiet; then
-            git add index.html
-            git commit -m "[auto-patch] Fix Accounts backend and load cached products"
+          if ! git diff --quiet -- products.csv; then
+            git add products.csv
+            git commit -m "[auto-patch] Publish Kzie product catalog"
             git push
           fi
