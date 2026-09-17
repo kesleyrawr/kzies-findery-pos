@@ -32,6 +32,6 @@ The POS includes a direct link to the Kzie’s Findery 2026 supplier price list 
 
 Passwords are intentionally not stored in this public repository. Configure `ADMIN_POS_PASSWORD` and `STAFF_POS_PASSWORD` privately in the hosting environment.
 
-## Source archive
+## Repository status
 
-The complete exported source is stored in this repository as `Kzies-Findery-POS-Source-v9.zip`.
+This repository is now the GitHub remote for the Kzie’s Findery POS working source. The current v9 source export is also kept as a downloadable project archive in the ChatGPT project workflow.
