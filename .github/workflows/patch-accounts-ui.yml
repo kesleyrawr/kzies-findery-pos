@@ -1,4 +1,4 @@
-name: Patch Accounts UI
+name: Patch Kzie POS frontend
 
 on:
   push:
@@ -13,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch Kzie's UI
+      - name: Patch Accounts UI and product loading
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           reps={
@@ -30,13 +31,31 @@ jobs:
             "The account will appear in the Admin’s Staff page as <b>Pending</b> until approved.":"The account will appear in the Admin’s Accounts page as <b>Pending</b> until approved.",
             "class=\"secondary\">Change My Password</button><button id=\"refreshStaff\" class=\"primary\"":"class=\"primary\">Change My Password</button><button id=\"refreshStaff\" class=\"secondary\""
           }
-          for a,b in reps.items(): s=s.replace(a,b)
+          for a,b in reps.items():
+              s=s.replace(a,b)
+
+          new_products = '''async function products(){
+           try{
+            const {data,error}=await sb.rpc('kzies_get_cached_products');
+            if(error) throw error;
+            const rows=Array.isArray(data)?data:[];
+            S.products=rows.map((x,i)=>{
+             const retail=x.retail==null?null:Number(x.retail),wholesale=x.wholesale==null?null:Number(x.wholesale),selling=retail?Math.round(retail*1.3):null;
+             return{id:x.id??i+1,brand:x.brand||'',name:x.name||'',retail,wholesale,notes:x.notes||'',selling,income:selling!=null&&wholesale!=null?selling-wholesale:null};
+            }).filter(x=>x.name);
+            if(!S.products.length) throw new Error('No products are available yet.');
+           }catch(e){console.error('Unable to load products',e);S.products=[]}
+          }
+          '''
+          s,n = re.subn(r"async function products\(\)\{.*?\n\}\n(?=async function staff\(\))", new_products, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('Could not find products() function to patch')
           p.write_text(s,encoding='utf-8')
           PY
           git config user.name "ChatGPT Update Bot"
           git config user.email "actions@users.noreply.github.com"
           if ! git diff --quiet; then
             git add index.html
-            git commit -m "[auto-patch] Rename Staff to Accounts and surface password change"
+            git commit -m "[auto-patch] Fix Accounts backend and load cached products"
             git push
           fi
