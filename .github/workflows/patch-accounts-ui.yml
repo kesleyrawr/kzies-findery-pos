@@ -1,0 +1,42 @@
+name: Patch Accounts UI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[auto-patch]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Kzie's UI
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          reps={
+            "Staff:'🛡️'":"Accounts:'👤'",
+            "...(S.profile.app_role==='Admin'?['Staff']:[])":"...(S.profile.app_role==='Admin'?['Accounts']:[])",
+            "if(t==='Staff'){staffView();return}":"if(t==='Accounts'){staffView();return}",
+            "<h2>Staff & Access</h2>":"<h2>Accounts</h2>",
+            "Username-based POS accounts":"Admin & Staff Accounts",
+            "No email invitations. Staff register with their name, username and password, then you approve them here.":"Manage Admin and Staff accounts, approvals, roles, and access here.",
+            "The account will appear in the Admin’s Staff page as <b>Pending</b> until approved.":"The account will appear in the Admin’s Accounts page as <b>Pending</b> until approved.",
+            "class=\"secondary\">Change My Password</button><button id=\"refreshStaff\" class=\"primary\"":"class=\"primary\">Change My Password</button><button id=\"refreshStaff\" class=\"secondary\""
+          }
+          for a,b in reps.items(): s=s.replace(a,b)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name "ChatGPT Update Bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add index.html
+            git commit -m "[auto-patch] Rename Staff to Accounts and surface password change"
+            git push
+          fi
