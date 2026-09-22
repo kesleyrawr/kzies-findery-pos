@@ -663,7 +663,7 @@ function findSavedCustomer(name,contact){
 function checkoutModal(){
   if(!S.cart.length)return;
   const subtotal=S.cart.reduce((a,p)=>a+p.selling*p.qty,0),m=document.createElement('div');m.className='modalBg';
-  const savedOptions=S.customers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name)+' • '+esc(x.contact_number||'No contact')+'</option>').join('');
+  const savedOptions=S.customers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name)+' • '+esc(x.contact_number||'No contact')+' • '+Number(x.loyalty_points||0)+' pts</option>').join('');
   m.innerHTML=`<div class="modal"><div class="modalHead"><h2>Customer & Payment</h2><button class="close">×</button></div>
   <div class="welcome">Products subtotal: <b>${money(subtotal)}</b></div>
   <div class="formGrid">
@@ -671,6 +671,7 @@ function checkoutModal(){
       <label>Saved customer<select id="coCustomerChoice"><option value="">New customer</option><option value="__walkin">Walk-in</option>${savedOptions}</select></label>
       <label class="walkinRow"><input id="coWalkIn" type="checkbox"> Walk-in customer • contact and address are optional</label>
       <div class="hint">Choose a saved customer to auto-fill their details, or type a matching name/contact below.</div>
+      <div id="coPointsPreview" class="pointsCard" style="margin-top:10px"></div>
     </div>
     <label class="full">Customer name<input id="coName" list="coNameList" placeholder="Customer name"></label>
     <datalist id="coNameList">${S.customers.map(x=>'<option value="'+esc(x.full_name)+'"></option>').join('')}</datalist>
@@ -693,10 +694,18 @@ function checkoutModal(){
 
   let addressCtl=null,applyingCustomer=false;
   setupPhAddress(coProvince,coCity,coBarangay,{}).then(x=>addressCtl=x);
+  const pointsToEarn=loyaltyPointsForSpend(subtotal);
+  function refreshPointsPreview(customer=null){
+    const walkin=coWalkIn.checked||coCustomerChoice.value==='__walkin';
+    if(walkin){coPointsPreview.innerHTML='<b>0 pts</b><div class="hint">Walk-in sales do not keep loyalty points. Choose or create a saved customer to earn points.</div>';return}
+    const current=Number(customer&&customer.loyalty_points||0),after=current+pointsToEarn;
+    coPointsPreview.innerHTML='<b>+'+pointsToEarn+' pts</b><div class="hint">Current: '+current+' pts • After purchase: '+after+' pts • ₱500 items = 3 pts</div>';
+  }
+  refreshPointsPreview();
 
   async function fillCustomer(x){
     if(!x)return;applyingCustomer=true;
-    coWalkIn.checked=false;coName.value=x.full_name||'';coContact.value=x.contact_number||'';coAddress.value=x.address_line||'';coZip.value=x.zip_code||'';
+    coWalkIn.checked=false;refreshPointsPreview(x);coName.value=x.full_name||'';coContact.value=x.contact_number||'';coAddress.value=x.address_line||'';coZip.value=x.zip_code||'';
     if(addressCtl)await addressCtl.apply({province:x.province||'',city:x.city||'',barangay:x.barangay||''});
     else{
       while(!addressCtl)await new Promise(r=>setTimeout(r,30));
@@ -708,14 +717,14 @@ function checkoutModal(){
     coWalkIn.checked=on;
     if(on){
       if(!coName.value.trim()||findSavedCustomer(coName.value,coContact.value))coName.value='Walk-in';
-      coCustomerChoice.value='__walkin';
-    }else if(coCustomerChoice.value==='__walkin')coCustomerChoice.value='';
+      coCustomerChoice.value='__walkin';refreshPointsPreview(null);calcCard();
+    }else if(coCustomerChoice.value==='__walkin'){coCustomerChoice.value='';refreshPointsPreview(null);calcCard()}
   }
   coWalkIn.onchange=()=>setWalkIn(coWalkIn.checked);
   coCustomerChoice.onchange=async()=>{
     if(coCustomerChoice.value==='__walkin'){setWalkIn(true);return}
     coWalkIn.checked=false;
-    if(!coCustomerChoice.value)return;
+    if(!coCustomerChoice.value){refreshPointsPreview(null);calcCard();return}
     const x=S.customers.find(v=>String(v.id)===String(coCustomerChoice.value));if(x)await fillCustomer(x);
   };
   const tryAuto=async()=>{
@@ -729,7 +738,7 @@ function checkoutModal(){
     const delivery=Math.max(0,Number(coDelivery.value)||0),base=subtotal+delivery,isCC=coPayment.value==='Credit Card';
     ccBox.style.display=isCC?'block':'none';
     if(!isCC){
-      coSummary.innerHTML=`<div class="summaryRow"><span>Amount due</span><strong>${money(base)}</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(base)}</strong></div>`;
+      coSummary.innerHTML=`<div class="summaryRow"><span>Amount due</span><strong>${money(base)}</strong></div><div class="summaryRow"><span>Loyalty points</span><strong class="pointsEarn">+${coWalkIn.checked?0:pointsToEarn} pts</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(base)}</strong></div>`;
       return{delivery,base,cardAmount:0,noFeeAmount:base,cardFee:0,total:base}
     }
     const partial=coCoverage.value==='Partial';ccAmountWrap.style.display=partial?'block':'none';
@@ -737,7 +746,7 @@ function checkoutModal(){
     if(partial){coCardAmount.readOnly=false;cardAmount=Math.max(0,Math.min(base,Number(coCardAmount.value)||0));if(Number(coCardAmount.value)>base)coCardAmount.value=base.toFixed(2)}
     else{cardAmount=base;coCardAmount.value=base.toFixed(2)}
     const noFeeAmount=Math.max(0,base-cardAmount),cardFee=Math.round(cardAmount*3)/100,total=base+cardFee;
-    coSummary.innerHTML=partial?`<div class="summaryRow"><span>Amount due before card fee</span><strong>${money(base)}</strong></div><div class="summaryRow"><span>Amount charged to card</span><strong>${money(cardAmount)}</strong></div><div class="summaryRow"><span>Other payment amount</span><strong>${money(noFeeAmount)}</strong></div><div class="summaryRow"><span>Credit Card fee (3%)</span><strong>${money(cardFee)}</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(total)}</strong></div>`:`<div class="summaryRow"><span>Amount due before card fee</span><strong>${money(base)}</strong></div><div class="summaryRow"><span>Credit Card fee (3%)</span><strong>${money(cardFee)}</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(total)}</strong></div>`;
+    coSummary.innerHTML=partial?`<div class="summaryRow"><span>Amount due before card fee</span><strong>${money(base)}</strong></div><div class="summaryRow"><span>Amount charged to card</span><strong>${money(cardAmount)}</strong></div><div class="summaryRow"><span>Other payment amount</span><strong>${money(noFeeAmount)}</strong></div><div class="summaryRow"><span>Credit Card fee (3%)</span><strong>${money(cardFee)}</strong></div><div class="summaryRow"><span>Loyalty points</span><strong class="pointsEarn">+${coWalkIn.checked?0:pointsToEarn} pts</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(total)}</strong></div>`:`<div class="summaryRow"><span>Amount due before card fee</span><strong>${money(base)}</strong></div><div class="summaryRow"><span>Credit Card fee (3%)</span><strong>${money(cardFee)}</strong></div><div class="summaryRow"><span>Loyalty points</span><strong class="pointsEarn">+${coWalkIn.checked?0:pointsToEarn} pts</strong></div><div class="summaryRow totalLine"><span>Final total</span><strong>${money(total)}</strong></div>`;
     return{delivery,base,cardAmount,noFeeAmount,cardFee,total}
   };
 
