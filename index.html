@@ -194,6 +194,141 @@ async function resetInvoiceCounter(){
 function shell(){const n=['POS','Quotation','Products','Sales','Refund & Warranty','Customers','Calendar','Reports',...(S.profile.app_role==='Admin'?['Capital & Income','Accounts','Backups']:[])];app.innerHTML=`<header class="top"><div class="topL"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCACAAIADASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAABgcEBQACAwgB/8QAQBAAAQMCBAQDBQYEBAYDAAAAAQIDBAURAAYSIQcTMUEiUWEUMnGBkRUjQlKhsQhicoJDksHRFjNTg6Oy4fDx/8QAGwEAAgMBAQEAAAAAAAAAAAAABQYCAwQHAAH/xAA6EQABAwMCAwYFAgUCBwAAAAABAgMRAAQhBTESQVEGE2FxgaEikbHR8BTBByMyQuEW8RUzUmJygsL/2gAMAwEAAhEDEQA/APU+PmPuMx6vV8x9xzkSGYrKnn3EttoFypR2GFhnPiwWXF0+jNqcevpISdwf5iOn9I38yMQ4lFYaaSVLOyRv9gOpMAV5RShBccISkbk/mT4DNMOpV2nUlKjKkISUi5SCLgevYfO2AGs8caRDUpuChUpQ2+5TqH+Y2T9NWF7WcoZ5q7ImzYEqQ0TqDTZBCP8Atg3+ZBPrgRXHW0tTbiFIUk2KVCxB8sMum9lV3Q47p8D/ALWyCR5qM+wHnS1qXaX9OeFhk/8AksET5D7n0pgz+OVcfJ9khMMp83XVLP0TpGKd3ixmx1VxKiI9Exgf/YnEuBSKDVMnOJZIaqbJC1KX7yj+Ueh/fHKlZCmSilxbSm2hupaxYAed8XWdl2fUl0utEFtRSe8KpxmcmIIMjwofc32r8TYQ4DxgEcIHPlgbivsfipnBrxGRFWB+aMB+xGLeBx1rUdQE2nR309y04pB+itQwWRMi0tyhPxvZkh4o1NuKHjv5+nwwq5GVZblVEBpol1atIHl6nGLSf9N6s264wjgSic8RTgf3YVtg7/Krr17WtPUhK18RVygHPTbfypuULjTl+qKS1LWuA4drSBpT/mF0/UjB5Fmx5raVx3ULSoXFj1Hp548y5ryqcsymWPaUyA62FXAsQe4Ixplqv1ygSU/ZMh3STcxyCttf9vb4ixx8/wBPF+2Te6S/3rahICsEjwUAPkoeZFaEdoyy8bbUG+FQ3Kc+2fY+lepMZgHyfxJj1sph1BpUKd05Tn4v6T3+HX44N0qCgFJIIO4IwBSs8RbWClQ3B3H+OhGDyNMqFpcQHGzKTsRX3GYzGYsqVZjlKksw47kh9YQ02LqUcdcK3iRmsy5JpUN5SW2r6lI3JPQkevUD5nyxlu7kMonmcCf38BufvVzDJcVA/P8AJqvzFmuZnKtijwZBiRklXMdTuWwOoT5r7E9ug7nF1l+k02gMmmR3Apte6n9A1qPXc4qIGQnWm25lMfdZdbFiHG7p6eY7fEY0mu1GjhS6lFQtokJDsdXQ+o//ADBrR3tNdbDdm+FLXkz8KlHwBgwOQGB5ySAvHbpDhcu2ikJ2jKUjzHM8yd/LFEDWaqrTHJuqjuvNMVFiHGLe5eZXpu9byBJv8PTFdxHyB7dUHMxRizyUpQqUym4UoA+JY89rX+GKqDmVt6SGkpkpUT4eh1Y3q2aqr7PJp5jPMl1soUp42+77n6d8GmbK4Ye421QYz5c6H3Wo2lyxwuCc4id+VQ4iMvx6gwaQpYUdSVFVyEEiySL+RwVN5ldNOebU0FT2wpoNaLhbuk6QfQkDf1wFUulqTy39lIXulSTdJ+BGxwRO1iLTpT6SVKfUvTobSVKskADYfDHN/wCIdim3ZtlB5bqhKZJkqG+SOm221MfY5arhT6CyEjBAAiDt44O/n51ypWe56qVldb0dmTKqbnKnmO4lxMUaSSVFJsOlj67dcXWYkUtz79txUWopSpSFN7326n09fXArlyj5YhVCS/EorUCZIRynEONaFKQVarafIkA/LEuuFmmpGmQwwp86yp91KS4ewGo7gbWAwA7LNruNQLNsvgSJKwQACJ/pjI58OcRmKL6+01bWxU4kqV/bG8xIPXG+KAapFke1LVJDhcUbkuXufrggoUN2BD5rJLS9CFqUNitSzZKb9kgbm3W/pjpmGpTKuY8eU2EKa7Ae8T3+mLAzIzMNtAUDIZQg8k7BakiyST5dNvTHTO1rupXOiNNoZ4FE/ElB4oSJjYbHB2xiknsomwt9XccddCgB8KlfD8Rid+cSM+NfM+VGDPp8RLdhUYytLq0Gyulxv5jF1w64juOLbpNYcu4rZp4/4nof5v3+PUNy7k+pVsvSFuJUlx8rkPk2uSdwkd7DDAZyZk5xtEEp5cha+Sh5L55odAva17XA3tbEWNOQjSGWLskXCQSCBlMmQlXUREjf1zV63nl6q7cWUFgkYOAqBBKcdZg/tTGSoKSFJIIIuCO+PuBrLUqdTlpo1YWhUlIu26k7PJvYK9D5jsfiMEuBbD3eAzhQMEdD9uY6imBSYg8jVPmurGj0Z11tRD7n3TVutyNyPgLn42woJFMfjVNqPLTy33HAVgnYC9rfAAfpgx4kZiYp9apzTygUMq1BBNtSrav9EfXAlW3hnB8VCnzH40hpA1p0hQsO/X16YDXjwf75ltQ4zCEgmPEwTiSYG84q5u7Ytnmw8ogCVHE7ggTGcCT60cxnR96lx6YloDnAMdQvoNx0uPM22wL8TszxWFwY7UUvTqm6QxHKw3qCE3Klr3CUi/r12xXwV5vjaHEJi1FsjTfVyzp8j0B/XAXxVmSV1LKsx5AbcakSGFAKv76L26D8tsYNKsdTtnW+8bKUtSST1yExOMA8ulEZ0+9dbty4FB0hMA8tzPPlXaLVpxYXJRmJFNm2PIYgwAsA9tbjtyR8ALjyxVyOItQ4lwqaajDZbhU0WfaA8E6V3uP+kkAHSeqlemI7bqUqSb9DiNHRFo9OQ0khDEdG5P1JPqTc/PBZ3UX3ZLiiSaf2ex+n27qCy2AlMnl6fermNNiUmHKl092TRaiV6mxDSkxJCidkuMK8O251Dew6jrgpyrnhzM1Ai1IuNxVuApdbLoCQsbHSSblPcehwpcq1mPmjiZRKVOQhynOPK5rCj4VpCVHSr4kC/wBMeh2soZLbWEN5cy8lZ6JENkn9sYldqv8AhDiUuo45Egfv50m9rdHs75zgtvhIOVD6eX70M5jzbApdBlTJTsKY4w2eU2HklZV0AGk36+WF3kKfFrME1mopYqdTfcJecmID1kj3UAKvZIG1h64bmcqVlKjZQrMqTl+hIbbhukKMJpJ1aDpCSBcG9rWwn8o5Hy0miU91/wC10rkxUrfXHl6DrVvcJIKbWPS2GrshqVvrNy7eItgCBBwJk/Xaub9pmFafpyLRdwoBSsHPIbY2HOj/ACC/Tqrmet02PGS3TobLElhlCyURVrKgttJ/KSkKCeibm2DCsZZgQqO/KZdUuQt0WBTew/Lt++FDwpNZhRqvFoojQ4/ty2nqrMRz3XgglKUNN3A8I6lRtc7DthhN/wDEakltuvR6ibXEaoRkMJdP5UutAaCexUlQ88RX2jt2Xwx3hRCthkRP9JNRuba3Ke7WtKnCkCTIJVG5gQD5+tEVMqsWDEjR4paaUgb9iVd7/PGLkwUS1SFMxUyFSPbCo21c3Ro1j107Yh5RZgV1tyeWlhTDpYdivbLjvJ95C7dxcWI2III2ONs7UJhSHRSlIalckOuN8zVoQTbWB167WHe2GMu2y1cQMzzqFsi/CQjhAggeQ2nH5FSq1mpt9lt/nJL8ZQcb0A6j5j5j9QPLDDpFRRVacxLbUFBaRcjzwo5lKMea5FfQRJ0JWlDXiBJtv8Nxg34fc+ntvUmTYKaAWgA3sk7j9Db+3C9qTLTLjVw1/f8ACrzjiSfqPUUW066uHXHbd4YTJSR0Cik59JG2xpT8YortazWxofLYY1uAhR2JVpG3fwoH1xDyLQan9ol1ExS2+cXFtuN6iUbpNlJ6djuB0xtxDoGa6pmN2dRmXXI4abQdKk21Wudj33xccNomYcvKM2vuxo7CmyhttyyXtRN9yNrdfXCraWL1w42tSJQTJnGJnemTUHdM/TLDhHeAROJmMeNF32wtpMyHDebD0Z9CC2pAKUgoukEeRPfAHxzpDaMoUWvMrPiqrClNkWLWtKxb9bYNpFJhVSrpq8WQWXFoDL4CdTbyQbpJsRZQ7HAdx3qJXk2XSo2lcaGmPMUrqrUl5P0ABOC1na6gLq5WtUsqEgzI35bxWFq708KtXG/+YlQ23HL1+3jS4aeKiBfrjnT6o3Mb5zKt0qKVJP4SNiCMQDL5ZuErWlNiVJGw+Z2wHwqyum16UsAmI87dRBulJP4bja+BqUcUxyru2oai1arb7z+lRj7Hy60SVzKTSB9u5ceaiVFpYCqeBYO6tgWfXexR9PLDr4Z5LdyrTkzKy6mVXJCbvL2KY6T/AIaP9T3PoMK4UTMMEUvOK6NOey9FkNyHJiUWaDYN9QB8RF7ePTbywaI400Rw++0j+p3/AGGAHaAXbqEttoMEZMZ8vKki9btFXCxaL+HmJET4VX8Z6HnvNdOmux2YcaiwWlvLbVMTzXEpFydI6mw6XxDoskM06C2DshpsfoMbZ14wUuXlaqwojjC35UVxhNnFEjUNPTT64D2sztiM1HiN+0vqbDbTLSipa16bAAWuTftjon8MXxb2zyboBuIjlO8nNcq/iBprtyphDQ4t9sgbdKZ2T5LTWWqfyraVt8027qUSon6k4gUqo0XLq5CnMzvzVvq1K9qfSsA3/CEpFsDGT6rUqFSo9NrsGbT3mwQlMphbRsPLUBceo88XAqOXY0xc4QqYZbgIWpEZKluX67W6nv54Rbi2/mucfMz70kPBTLy2XQZnkJ96MuHeYkTM615FMKn2naQ3KcSRpSp9txSEnfuUED+30xJmqfm6Jqo7LdUej8txzmEpRpO6rDqCLeG3U3wMcNXImW8nVqr0phxlUmsKisukczWwgBQQCdrDUoX9PPGq6kiTU/aXC+qytY1K03HWwAO2HrTSLeySndUY8qeWVuNLRbtCYCZUoEctjv8AI+FM6QphNUnyuazGqcGElqwf8ClbW6jofK2LTLstxGY2FLIIcb0ak+6ogjp5jx4X+ZZEd6mMKagNNuPLQXnCVKUsgG17k4vsrVK9chxkIaQlvTfSLFStI/2xi1hLts1wLH/SfKCnn6R5VvtXF3hDySIBI9IOM8sz51fPuCM3Um5HM9na0rIQN7207W3v4cKjPdSmzq6mS0pwQ4+lLaVAjqASbedzgw4zS6zQpbTtIdW2X3Vtqt0ubLSenqsfLArT8xZxkqSpMdK21oCkJUtPvDqDcW3F8B2tcetLdVqWwQCRJVGBjaP3oVqehXd68XWkkpPQA/vynpTGyXO+3ILEQpYjBtuyiOrht1wDVSkKdrsXKaJUdJrrrkEylo5qG2w2VrISbalECwvtc33ti4y7Utc512YDDdU2olLQGlLg2I27XvipzvTX6xl2JWctvNs1KlOCYwsL3UtKVBQNyLXST9MEdGecRbvoKo4ohON9z7CMb1lsVtm4a7yJSSJ9hjwNGOX/AOHzh9lmMl2dDfrKo6dRdqrxcQgAdeWLIAHqDgd4257yKrhpVMvU5yE4p1KUMNxWkhtDgIKbW6Hbthi8Oq6rMuQKDUZBDrkyA0XtW+pRTZV7+t8JvjbxVyjNyVVMn0mCEPIdSjSlpLaGFoX2SOhuLduuIvqIASDE+Gf8U6sJK18SgVRznA/OlFGcq7nmncHFh/LtNitqhNRXAmUFFDawGx4bW21C++AVj+DmaW4qnc0QwtZHtATFUeWm1yUnV4jew3t5+mGvxgc18G6gL/4MQ/8AmaxM4v5hqGX8lJm0uQpiSZ0NnWk76VupSofQ48lIRJycDnXwLUqAABk8vKvO3E3+HSfkEQJFMlfbUadITDTpZ5bqHle6kpuQQqxsb9t8Mfhf/DTUck5ipWZptahrlRla3YTbJITcEEBy/UX/AC29cNjOtRiQYtKlTCgNNVWMdSuiSSUg/VWMzFTa5Uq3QJdKq7UODDfWuewpKiZLZA0hJG1wR388SVBkDPrUQ4ogTjfMUAfxOUuq1uj5Yg0RDjlUfqpbjhs2VctKvv2Fup8sL97+G/iFyWZFRqkGoIuC/EiSVJeKe4SpYCCr4kD1w4+I0isDM2SjRYPtr7c591xBUEpS0GrKUVHYe9b4nBA7Im1pkSqa/Kpk6PqbMeW390tXWyx3HSy0n69MRXwqUZTJ/OdVhpMJXAkcyJj96V2XGKJNqlPpCW5UOkwwI6ITidJaeSrxJdSfdWSfF163BsQcVeaKXT1ViU5R+Y80HCbhu2k9wLdR67Y4ZUZqlVFZq9TKfb58t9x5CTcNLQrlaAfTl/tgkjx5EBOll5xkIcS02hBtzV9VLV3PQ2HS1sX6peN6a01eOyVLEBEgARznPhWSxtVXdw5btnCDJUc5P7zOelVma5aKc3GhLZSsgJdWFKKTboAPXrglyzDaNepzrCXkpWm5Q6PEknSPpvtim4nmNUGqdIjMqdlIBYfWkX8QIsPjucEXDNqRLqrIksvtuRr6uckhRAFx17e7j2paq3qFs263u5Aj/wBhPyg5oDprVza6mu1UfhTJ8NjHzkUQcVaF9qUZTiW1LcSAtAT1LiLqSB8RrHzGFHlbMlNqRbjrQYi2ViyFn3ydtiO++PR0+GmfDcjk6SoeFX5VDcH5G2PNWaaPEyRmd6c/FZU3LcU4hDwulhaffQB3N9x6EYA6xaoS4pSgfiyI6jceoz86PuajeW7aF26vhSfiEbg7Hr4fKudJqj7OaX0tSFBClucxEhJUn3jsE/DGtYyc7XIr0ditvFlL63G2UxVHT/LfVt2HTtjpWH40mJAzBT2lxpDi1NSGkfiJSSCkHpf98F9DqMSXEbVDZkMshISn2m+tR7ncA2v5+uMeq6r3i0LYECBy5jGa1dk9MbbZW+rKlEjwjB/3oX4fcU2uH+UGssVpn2Wo0tx1sIfC7qbKypCkhKTqFlDcYDJ3CybxInVrNCmZMF2a+XYKFWbQ6SN1qSbqAJ6d8NypSIrNQZdn+xpYEWQIzs1sqitTCE8pTw/LbXa+1/W2IBrOVkTguWgvkswg+aWqQzCffK1JkuNJasDpTpUT6DvfFzVy68gPByCeXIew95xRlaUNKLfdyOvX89KDK7mHO2caIcqqbQyVhppbq5iCxcLATuhN7FSbC53O25xY5kpPE7N9PbpkxqKw2y83I1Oz9aFqbIUAEpQD1Hfpi2NboDlPjQn2alIjsRosbSWHxrS1NLllbDV91vv++OrNcyeZocfoslpjlOJLQbdLAWHjoUpskkrU1+IA2JsbG1pOACOBzbrJ/wDr2NfEurzLfyA+1DOcGM9Zlgs0utTYNIbS4mQhb1RL2so3FkBI2va5OwxNj5h4l/ZyKfDhtSzH0lTsSrIKFp6i1xqFx0B2wQZZzUzQZjj1SlvMsSozbY5SVvPhKHXVJTzGyVIUEqRsoEK7nY4hw6nl0M0piTFchORI8tt46H2ipxToU0X3GdlJUPEdJPi8htipASpA/mZ9frxTHnPpVinlpUR3ePIfSIqnlV/io3XIdeepMwxoja2ywmQ066NRGpQQm2oeEC3U+mCGRxzqD0b2am0aZIqahZLIguoUFeuoaU/EnbHNVXoXtLTcarV5tpycsOynZCgIEQKQEKWhxJBCrkJUrex1G9sXFMqDb06bGiTlz4bCWil5biHdLigrUjWjZQACT5jVY4reeeZRx8WB0J95n2INSR3bqgko+YH7RQ3lmBMytT432jWpSFvuF2XHRHUpBdcWVrAOqx8RsDa+L/MVaixke2RJTLzzjetgrVZCArbURa99unXGteqESKhHtceW9HUFXVEuFpWLFO43Hc/LAguhmrUBtxsOrd5pbU0DupNtQIt6/W+KbJtGoqLdyYAlQPjjriDEVk1l9ywaS/bAcRKUZ2gz0gyN99q2fcjmn+wsZpjKU4ea8VtL1Fy97g/6YcvCOivU6hmRJdW+8v7vmr6q3uT9bD+3CRybkp2q5kbaKHQ426nUhd7a7XAPoNyfQY9RQITVOhMxGfcaQEg9z5n59cFdLt3FXHxKlDe2BuR4DkPqKA/o3LdS3n1AuOcxO2538YjyqRgF4pZCg5vpDntDJUBZSygeNBT7rifUbg+YJ8sHWMwwXVul9stq9D0PWvrLpaWFCvMTGSEQnm6VKrMtMTUC2tSATq7G9+nlbFPmCg5tpdaFMhVdTjDllNvpUUIUD3Nrf74e+e8iCdFW/BugJPMAQm5ZV5gd0nuO3UYWwM+LRqpArbzTSHGjpCd9QHRbavTCRc9/bOcD4B6Y9xjPiKyd9c6eVKtlfAoz4A9COR+vjVA3R4tA9lm1+s1OrIS8hTqIz3gWAblNj1BtY+YuMGVcayPnWG/Sqc2tpxb4ksyIUMshW1ijWrsB1A2uNsAdcyOkUtqZQ6wqc40nW5Ef2VywNykjbpfbAciVXg6uQwiS0xoCSskjwg7i/T5Y+261qYUhtQJM5IiMRtj0rOzc6s/JSOIHx28jOKZR4R5aa/50upKUdgef3+mJZ4SZSWltsolt6t0qMkhS8LSp12rPJjPNJkJZZ95Slm53BuB8saVHNM+oRY7MB55TrN0lxSjttYAfXA0WV8Y/mn7VJLWpqUkFKvi2kn36etMxvg9lAvJSHJ2u+wXJsFH5DEw8HsrOtobDstjSk/eNSbk3N7kkf/GFq3VswyoaYZbC5WpADmo2NiNgO3T5YnUqqVl9E6nJbkLnthZCEElIF+58t8VLtr1OS9t4+9aP02qNwShWTG5/PWjyBw/ZyDXIlYht1CvoQFhMdUhsJJKSLEK2JF72xZZryurNseK7Q5cugSYzfKCSlDLTo6i6EG4IJIvfphVLzXWJVPDLK1CSxKUpxBUdIABFgfPfFqmpZrW+pbFPWErjhQSV9FX6n/72xpC71LfdEj135emfL61obTqqf5iUKjxPTG+8V2pmX80qmzoddqchsQk3UllzmE+fvXFrd/XFDBTPqFVaapzywtB1JJUTygD7xOLWl5izLVq687SFHlLbS0vnHUhsaQCVeZ2Nu+HRw14WRKAn7Rlx7POKDgQseJR7KV5Adk9up3w0qZSUoYYbCXCPizMT16RmBz96HMu3Oqku3iz3QOABAPl1PU8varvh7lVdGgidOK3Jrydi57yUnuf5j+gsMGGMxmDdrbIt2w0jYe/jRBxwrM/gHSsxmMxmNFQrMC+aciU/MMZ5sNtpLm621XCFnz23SfUfrgoxmKLi2buE8DokfTy6VNCynbn8j50hTkSVlGY4pEbnoUCkIkGy7W/Cv3VfofTFbRcwSYTiIEqIopdaU0uPNRYJF7d/0x6JeZakNqaebQ62rqlYuD8sUFSyLSZ6FJSlTIP4LBaP8qr2+VsLF12fcBKmjxT1wfsfas67NlRBaJbI9R9x7150q9D5C5b0JUd2M26UFhKvGgHoQO4+GI8XJNTbS7UmWoi0Cyiw26CsD+nufhhyyeC0NEhUiM3FUs3uQtbd/l4hivRwinRJBej+0Aj3QmQ2Qn4XAxlVb3baYLZnyn6E0VGo6gnhAKFAc5g+8UvqZSlpuqYh1l78KFDTpHzxc0tsRPaVNhoAiyiBYmw7n44P6jkesVmNHZlMkLZ2S/zkBdvI2BxKicNHAwGHVQmW99WlJcUq/W/QHGT9DdvHDR+n1imJvWGw2O9gHnmfpSPyc2qdOW8mIHXHVKcUQdkgm+GJSsuT6y+sMMLVqSUHlq0obuLG6unT5+mGNSuH9EpjSW+Tzkp6IICWx/amw+t8EbbbbLaW2kJbQnYJSLAfLBdrs+4653jyuEdBk/PYe9YLjXPhKGxP5+dKGMqZApuWmkK5TTj6TqSEJshs+YHc/wAx3+GCnHzH3DMxbtsJ4GxA/N+tL61lW/8At5VmMxmMxdUK/9k=" class="logo"><div><b>Kzie’s Findery</b><div class="muted">ONLINE STORE • POS</div></div></div><div class="topR"><div id="backupStatus">${backupStatusHtml()}</div><div id="clk">${clock()}</div><span class="pill">${esc(S.profile.full_name)} • ${S.profile.app_role}</span><button id="out" class="secondary">↪</button></div></header><div class="layout"><aside class="side">${navHtml(n)}</aside><main id="content" class="main"></main></div>`;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;if(S.tab==='Products')S.pages.Products=1;shell()});document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{S.tab='Products';S.productCategory=b.dataset.category;S.search='';S.pages.Products=1;shell()});out.onclick=logoutLocal;render();clearInterval(window.__c);window.__c=setInterval(()=>{if(document.getElementById('clk'))clk.innerHTML=clock()},1000)}
 function cards(list,adminActions=false){return '<div class="grid">'+list.map(p=>'<article class="product"><div class="thumb">'+(p.image_data?'<img class="productCardImg" src="'+p.image_data+'" alt="'+esc(p.name)+'">':'📦')+'</div><div class="body"><div class="brandName">'+esc(p.brand)+'</div><h3>'+esc(p.name)+'</h3><div class="price">'+(p.selling?money(p.selling):'Contact us')+'</div><div class="cost">Retail: '+(p.retail?money(p.retail):'Contact us')+'<br>Wholesale: '+(p.wholesale?money(p.wholesale):'Contact us')+'</div>'+(p.income!=null?'<div class="income">Income: '+money(p.income)+'</div>':'')+'<div style="margin-top:7px">'+stockBadge(p)+' '+(p.stock_tracked?'<span class="hint">Qty: '+p.stock_qty+'</span>':'')+'</div><button data-add="'+p.id+'" '+(!p.selling||(p.stock_tracked&&p.stock_qty<=0)?'disabled':'')+'>Add to cart</button>'+(adminActions&&S.profile?.app_role==='Admin'?'<div class="productActions"><button class="secondary" data-edit-product="'+p.id+'">Edit</button><button class="danger" data-delete-product="'+p.id+'">Delete</button></div>':'')+'</div></article>').join('')+'</div>'}
 function bindAdd(){document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const p=S.products.find(x=>x.id==b.dataset.add);if(!p){toast('Product not found. Please refresh.');return}const q=S.cart.find(x=>x.id===p.id),next=(q?.qty||0)+1;if(p.stock_tracked&&next>p.stock_qty){toast('Only '+p.stock_qty+' in stock for '+p.name+'.');return}rememberRecent([p]);q?q.qty++:S.cart.push({...p,qty:1});if(S.tab==='POS'){render()}else{const oldText=b.textContent;b.textContent='Added ✓';b.disabled=true;toast(p.name+' added to cart.');setTimeout(()=>{if(document.body.contains(b)){b.textContent=oldText;b.disabled=false}},700)}})}
+
+function productPhotoHtml(p){
+  return p&&p.image_data?'<img class="productThumbImg" data-product-photo="'+p.id+'" src="'+p.image_data+'" alt="'+esc(p.name)+'">':'<div class="productThumbEmpty">📦</div>';
+}
+function zoomProductPhoto(id){
+  const p=S.products.find(x=>Number(x.id)===Number(id));if(!p||!p.image_data)return;
+  const m=document.createElement('div');m.className='modalBg';
+  m.innerHTML='<div class="modal" style="width:auto"><div class="modalHead"><h2>'+esc(p.name)+'</h2><button class="close">×</button></div><div class="photoZoom"><img src="'+p.image_data+'" alt="'+esc(p.name)+'"></div></div>';
+  document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
+}
+function bindProductPhotos(){document.querySelectorAll('[data-product-photo]').forEach(x=>x.onclick=()=>zoomProductPhoto(Number(x.dataset.productPhoto)))}
+function readImageFile(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Unable to read image.'));img.src=r.result};
+    r.onerror=()=>reject(new Error('Unable to read image file.'));
+    r.readAsDataURL(file);
+  });
+}
+function bgDistance(r,g,b,br,bg,bb){return Math.sqrt((r-br)*(r-br)+(g-bg)*(g-bg)+(b-bb)*(b-bb))}
+async function processProductPhoto(file,strength=55){
+  if(!file)throw new Error('Choose a product photo first.');
+  if(!/^image\/(png|jpeg|webp)$/i.test(file.type))throw new Error('Use a JPG, PNG, or WEBP image.');
+  if(file.size>8*1024*1024)throw new Error('Image is too large. Please use a photo under 8 MB.');
+  const img=await readImageFile(file);
+  const maxSide=850,scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+  const src=document.createElement('canvas');src.width=w;src.height=h;
+  const ctx=src.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);
+  const data=ctx.getImageData(0,0,w,h),px=data.data,border=[];
+  const step=Math.max(1,Math.floor(Math.min(w,h)/70));
+  for(let x=0;x<w;x+=step){border.push(x*4,((h-1)*w+x)*4)}
+  for(let y=0;y<h;y+=step){border.push((y*w)*4,(y*w+w-1)*4)}
+  let br=0,bg=0,bb=0,n=0;
+  for(const i of border){if(px[i+3]>10){br+=px[i];bg+=px[i+1];bb+=px[i+2];n++}}
+  br=n?br/n:255;bg=n?bg/n:255;bb=n?bb/n:255;
+  const tol=Math.max(12,Math.min(150,Number(strength)||55));
+  const seen=new Uint8Array(w*h),queue=new Uint32Array(w*h);let head=0,tail=0;
+  const push=(idx)=>{
+    if(seen[idx])return;
+    const j=idx*4;
+    if(px[j+3]>0&&bgDistance(px[j],px[j+1],px[j+2],br,bg,bb)<=tol){seen[idx]=1;queue[tail++]=idx}
+  };
+  for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}
+  for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+  while(head<tail){
+    const idx=queue[head++],x=idx%w,y=(idx/w)|0,j=idx*4;px[j+3]=0;
+    if(x>0)push(idx-1);if(x<w-1)push(idx+1);if(y>0)push(idx-w);if(y<h-1)push(idx+w);
+  }
+  ctx.putImageData(data,0,0);
+  const outData=ctx.getImageData(0,0,w,h).data;
+  let minX=w,minY=h,maxX=-1,maxY=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(outData[(y*w+x)*4+3]>20){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y}
+  }
+  if(maxX<minX||maxY<minY)throw new Error('Background removal removed the whole image. Lower the strength and try again.');
+  const bw=maxX-minX+1,bh=maxY-minY+1,size=600,pad=48,fit=Math.min((size-pad*2)/bw,(size-pad*2)/bh);
+  const dw=bw*fit,dh=bh*fit,dx=(size-dw)/2,dy=(size-dh)/2;
+  const out=document.createElement('canvas');out.width=size;out.height=size;
+  const octx=out.getContext('2d');octx.clearRect(0,0,size,size);octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';
+  octx.drawImage(src,minX,minY,bw,bh,dx,dy,dw,dh);
+  return out.toDataURL('image/webp',0.9);
+}
+function attachProductPhotoEditor(prefix,initialImage){
+  const file=document.getElementById(prefix+'Photo'),preview=document.getElementById(prefix+'Preview'),
+        strength=document.getElementById(prefix+'Strength'),strengthVal=document.getElementById(prefix+'StrengthVal'),
+        reprocess=document.getElementById(prefix+'Reprocess'),remove=document.getElementById(prefix+'RemovePhoto'),
+        msg=document.getElementById(prefix+'PhotoMsg');
+  let current=initialImage||'',sourceFile=null;
+  const draw=()=>{
+    preview.innerHTML=current?'<img src="'+current+'" alt="Product preview">':'<div class="photoPreviewEmpty">Upload a product photo.<br>It will be saved as a transparent 600 × 600 square.</div>';
+    remove.style.display=current?'inline-block':'none';
+  };
+  const process=async()=>{
+    if(!sourceFile){msg.textContent='Choose a new photo first.';return}
+    msg.textContent='Removing background…';reprocess.disabled=true;
+    try{current=await processProductPhoto(sourceFile,Number(strength.value));draw();msg.textContent='✓ Background removed. Check the preview before saving.'}
+    catch(e){msg.textContent=e.message}
+    reprocess.disabled=false;
+  };
+  file.onchange=async()=>{sourceFile=file.files&&file.files[0]||null;if(sourceFile)await process()};
+  strength.oninput=()=>strengthVal.textContent=strength.value;
+  reprocess.onclick=process;
+  remove.onclick=()=>{current='';sourceFile=null;file.value='';draw();msg.textContent='Photo removed. Save the product to apply.'};
+  draw();
+  return{getImage:()=>current};
+}
+function productEditorModal(p){
+  if(S.profile?.app_role!=='Admin')return;
+  const isEdit=!!p,cats=['Keyboards','Mice','Headsets','Mouse Pads','Cooling & Fans','Thermal Paste','Accessories','Other'];
+  const current=(p&&p.category)||categoryOf(p||{name:'',brand:''})||'Other',prefix=isEdit?'ep':'np';
+  const m=document.createElement('div');m.className='modalBg';
+  m.innerHTML='<div class="modal"><div class="modalHead"><h2>'+(isEdit?'Edit Product':'Add Product')+'</h2><button class="close">×</button></div>'+
+    '<div class="formGrid"><div class="photoEditor"><div class="photoEditorGrid">'+
+    '<div id="'+prefix+'Preview" class="photoPreviewWrap"></div>'+
+    '<div class="photoControls"><div><b>Product Photo</b><div class="hint">JPG / PNG / WEBP • auto background removal • transparent 600 × 600 square.</div></div>'+
+    '<input id="'+prefix+'Photo" type="file" accept="image/png,image/jpeg,image/webp">'+
+    '<div class="photoStrength"><span class="hint">Removal strength</span><input id="'+prefix+'Strength" type="range" min="20" max="120" value="55"><b id="'+prefix+'StrengthVal">55</b></div>'+
+    '<div class="photoButtons"><button id="'+prefix+'Reprocess" type="button" class="secondary">Reprocess</button><button id="'+prefix+'RemovePhoto" type="button" class="danger">Remove Photo</button></div>'+
+    '<div id="'+prefix+'PhotoMsg" class="hint">Best results: product centered on a plain or simple background.</div></div></div></div>'+
+    '<label>Brand<input id="'+prefix+'Brand" value="'+esc(p&&p.brand||'')+'"></label>'+
+    '<label>Category<select id="'+prefix+'Cat">'+cats.map(x=>'<option '+(x===current?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'+
+    '<label class="full">Product name<input id="'+prefix+'Name" value="'+esc(p&&p.name||'')+'"></label>'+
+    '<label>Retail price<input id="'+prefix+'Retail" type="number" min="0" step="0.01" value="'+(p&&p.retail!=null?p.retail:'')+'"></label>'+
+    '<label>Wholesale price<input id="'+prefix+'Wholesale" type="number" min="0" step="0.01" value="'+(p&&p.wholesale!=null?p.wholesale:'')+'"></label>'+
+    '<label class="full">Notes<input id="'+prefix+'Notes" value="'+esc(p&&p.notes||'')+'"></label>'+
+    (!isEdit?'<label class="full walkinRow"><input id="npOpenStock" type="checkbox" checked> Open stock setup after saving this product</label>':'')+
+    '</div><p id="'+prefix+'Msg" class="error"></p><button id="'+prefix+'Save" class="primary wide modalStickyAction">'+(isEdit?'Save Product':'Add Product')+'</button></div>';
+  document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
+  const photo=attachProductPhotoEditor(prefix,p&&p.image_data||'');
+  const by=id=>document.getElementById(prefix+id);
+  by('Save').onclick=async()=>{
+    if(!by('Name').value.trim()){by('Msg').textContent='Product name is required.';return}
+    by('Save').disabled=true;by('Save').textContent=isEdit?'Saving…':'Adding…';
+    const tok=localStorage.getItem(TOKEN_KEY)||'';
+    const args={
+      p_token:tok,p_brand:by('Brand').value.trim(),p_name:by('Name').value.trim(),
+      p_retail:by('Retail').value===''?null:Number(by('Retail').value),
+      p_wholesale:by('Wholesale').value===''?null:Number(by('Wholesale').value),
+      p_notes:by('Notes').value.trim(),p_category:by('Cat').value,p_image_data:photo.getImage()
+    };
+    if(isEdit)args.p_product_id=p.id;
+    const res=await sb.rpc(isEdit?'kzies_update_product_local':'kzies_create_product_local',args);
+    if(res.error||!res.data||!res.data.ok){
+      by('Msg').textContent=res.data&&res.data.error||res.error&&res.error.message||'Unable to save product.';
+      by('Save').disabled=false;by('Save').textContent=isEdit?'Save Product':'Add Product';return
+    }
+    const newId=isEdit?p.id:Number(res.data.product_id);
+    const openStock=!isEdit&&document.getElementById('npOpenStock')&&document.getElementById('npOpenStock').checked;
+    m.remove();await products();scheduleAutoBackupSoon();toast(isEdit?'Product updated.':'Product added.');render();
+    if(openStock)setTimeout(()=>stockModal(newId),120);
+  };
+}
+function addProductModal(){productEditorModal(null)}
+function editProductModal(id){const p=S.products.find(x=>Number(x.id)===Number(id));if(p)productEditorModal(p)}
 async function toggleStockTracking(id,enabled,input){
   if(S.profile?.app_role!=='Admin'){if(input)input.checked=!enabled;return}
   const p=S.products.find(x=>x.id===id);if(!p){if(input)input.checked=!enabled;return}
@@ -220,9 +355,6 @@ async function toggleStockTracking(id,enabled,input){
 }
 function bindProductAdminActions(){document.querySelectorAll('[data-edit-product]').forEach(b=>b.onclick=()=>editProductModal(Number(b.dataset.editProduct)));document.querySelectorAll('[data-delete-product]').forEach(b=>b.onclick=()=>deleteProduct(Number(b.dataset.deleteProduct)));document.querySelectorAll('[data-stock-product]').forEach(b=>b.onclick=()=>stockModal(Number(b.dataset.stockProduct)));document.querySelectorAll('[data-stock-history]').forEach(b=>b.onclick=()=>stockHistoryModal(Number(b.dataset.stockHistory)));document.querySelectorAll('[data-stock-toggle]').forEach(b=>b.onchange=()=>toggleStockTracking(Number(b.dataset.stockToggle),b.checked,b))}
 async function deleteProduct(id){if(S.profile?.app_role!=='Admin')return;const p=S.products.find(x=>x.id===id);if(!confirm(`Delete ${p?.name||'this product'} from Kzie’s product list?`))return;const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_delete_product_local',{p_token:tok,p_product_id:id});if(error||!data?.ok){toast(data?.error||error?.message||'Unable to delete product.');return}await products();toast('Product deleted.');shell()}
-function editProductModal(id){const p=S.products.find(x=>x.id===id);if(!p||S.profile?.app_role!=='Admin')return;const cats=['Keyboards','Mice','Headsets','Mouse Pads','Cooling & Fans','Thermal Paste','Accessories','Other'];const current=p.category||categoryOf(p);const m=document.createElement('div');m.className='modalBg';m.innerHTML=`<div class="modal"><div class="modalHead"><h2>Edit Product</h2><button class="close">×</button></div><div class="formGrid"><label>Brand<input id="epBrand" value="${esc(p.brand)}"></label><label>Category<select id="epCat">${cats.map(x=>`<option ${x===current?'selected':''}>${x}</option>`).join('')}</select></label><label class="full">Product name<input id="epName" value="${esc(p.name)}"></label><label>Retail price<input id="epRetail" type="number" min="0" step="0.01" value="${p.retail??''}"></label><label>Wholesale price<input id="epWholesale" type="number" min="0" step="0.01" value="${p.wholesale??''}"></label><label class="full">Notes<input id="epNotes" value="${esc(p.notes||'')}"></label></div><p id="epMsg" class="error"></p><button id="epSave" class="primary wide">Save Product</button></div>`;document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();epSave.onclick=async()=>{if(!epName.value.trim()){epMsg.textContent='Product name is required.';return}epSave.disabled=true;epSave.textContent='Saving…';const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_update_product_local',{p_token:tok,p_product_id:id,p_brand:epBrand.value.trim(),p_name:epName.value.trim(),p_retail:epRetail.value===''?null:Number(epRetail.value),p_wholesale:epWholesale.value===''?null:Number(epWholesale.value),p_notes:epNotes.value.trim(),p_category:epCat.value});if(error||!data?.ok){epMsg.textContent=data?.error||error?.message||'Unable to save product.';epSave.disabled=false;epSave.textContent='Save Product';return}m.remove();await products();toast('Product updated.');shell()}}
-
-
 function stockModal(id){
   const p=S.products.find(x=>x.id===id);if(!p||S.profile?.app_role!=='Admin')return;
   const m=document.createElement('div');m.className='modalBg';
