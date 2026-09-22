@@ -463,7 +463,7 @@ function calendarView(c){
   var grid=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(function(x){return '<div class="calHead">'+x+'</div>'}).join("");
   grid+=cells.map(function(day){var ev=S.events.filter(function(e){return String(e.event_date).slice(0,10)===day.iso});var pills=ev.slice(0,3).map(function(e){return '<button class="calEvent '+String(e.status).toLowerCase()+'" data-open-event="'+e.id+'" title="'+esc(e.title)+'">'+(e.event_time?String(e.event_time).slice(0,5)+' ':'')+esc(e.title)+'</button>'}).join("");return '<div class="calDay '+(day.inMonth?'':'out')+'"><div class="calDate">'+day.day+'</div>'+pills+(ev.length>3?'<div class="hint">+'+(ev.length-3)+' more</div>':'')+'</div>'}).join("");
   var rows=eventList.length?eventList.map(function(e){var act=S.profile&&S.profile.app_role==="Admin"?'<div class="actionRow"><button class="secondary miniBtn" data-edit-event="'+e.id+'">Edit</button><button class="danger miniBtn" data-delete-event="'+e.id+'">Delete</button></div>':'View only';return '<tr><td><b>'+fmtDate(String(e.event_date).slice(0,10))+'</b><div class="hint">'+(e.event_time?String(e.event_time).slice(0,5):'')+'</div></td><td>'+esc(e.event_type)+'</td><td><b>'+esc(e.title)+'</b><div class="hint">'+esc(e.notes||"")+'</div></td><td>'+esc(e.customer_name||"—")+'</td><td>'+esc(e.contact_number||"—")+'</td><td>'+esc(e.status)+'</td><td>'+(e.quote_total?money(e.quote_total):"—")+'</td><td>'+act+'</td></tr>'}).join(""):'<tr><td colspan="8" class="empty">No reminders for this month.</td></tr>';
-  c.innerHTML='<div class="calendarToolbar"><div><h2 style="margin:0">Calendar & Follow-ups</h2><div class="hint">Quotation follow-ups, customer reminders, deliveries, and warranty reminders.</div></div><button id="addEvent" class="primary">+ Add Reminder</button></div><div class="calendarToolbar"><button id="prevMonth" class="secondary">‹ Previous</button><h3 style="margin:0">'+monthName+'</h3><button id="nextMonth" class="secondary">Next ›</button></div><div class="calendarGrid">'+grid+'</div><div class="sectionTitle"><h3 style="margin:0">Reminders this month</h3></div><div class="light tableWrap"><table class="tbl"><thead><tr><th>Date</th><th>Type</th><th>Reminder</th><th>Customer</th><th>Contact</th><th>Status</th><th>Quote</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pager(monthEvents,"Calendar");
+  c.innerHTML='<div class="calendarToolbar"><div><h2 style="margin:0">Calendar & Notes</h2><div class="hint">Add simple notes, reminders, quotation follow-ups, deliveries, and warranty dates.</div></div><button id="addEvent" class="primary">+ Add Note / Reminder</button></div><div class="calendarToolbar"><button id="prevMonth" class="secondary">‹ Previous</button><h3 style="margin:0">'+monthName+'</h3><button id="nextMonth" class="secondary">Next ›</button></div><div class="calendarGrid">'+grid+'</div><div class="sectionTitle"><h3 style="margin:0">Reminders this month</h3></div><div class="light tableWrap"><table class="tbl"><thead><tr><th>Date</th><th>Type</th><th>Reminder</th><th>Customer</th><th>Contact</th><th>Status</th><th>Quote</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+pager(monthEvents,"Calendar");
   bindPager();document.getElementById("addEvent").onclick=function(){eventModal()};document.getElementById("prevMonth").onclick=function(){monthShift(-1)};document.getElementById("nextMonth").onclick=function(){monthShift(1)};bindCalendarActions();
 }
 function refundSaleModal(id){
@@ -491,16 +491,92 @@ function bindWarrantyActions(){
   document.querySelectorAll("[data-delete-warranty]").forEach(function(b){b.onclick=async function(){if(!confirm("Delete this warranty claim?"))return;var tok=localStorage.getItem(TOKEN_KEY)||"",res=await sb.rpc("kzies_delete_warranty_local",{p_token:tok,p_warranty_id:Number(b.dataset.deleteWarranty)});if(res.error||!res.data||!res.data.ok){toast((res.data&&res.data.error)||(res.error&&res.error.message)||"Unable to delete warranty.");return}await loadWarranties();toast("Warranty claim deleted.");render()}})
 }
 function eventModal(event,quote){
-  event=event||null;quote=quote||null;var isEdit=!!event,quoteMode=!!quote,types=["Quote Follow-up","Customer Follow-up","Warranty","Delivery","Other"],defaultDate=event&&event.event_date?String(event.event_date).slice(0,10):phToday(),m=document.createElement("div");m.className="modalBg";
-  var typeValue=quoteMode?"Quote Follow-up":event&&event.event_type||"Customer Follow-up",status=event&&event.status||"Upcoming";
-  m.innerHTML='<div class="modal"><div class="modalHead"><h2>'+(isEdit?"Edit Reminder":quoteMode?"Schedule Quote Follow-up":"Add Reminder")+'</h2><button class="close">×</button></div><div class="formGrid"><label>Date<input id="evDate" type="date" value="'+defaultDate+'"></label><label>Time<input id="evTime" type="time" value="'+(event&&event.event_time?String(event.event_time).slice(0,5):"")+'"></label><label>Type<select id="evType">'+types.map(function(x){return '<option '+(x===typeValue?'selected':'')+'>'+x+'</option>'}).join("")+'</select></label><label>Status<select id="evStatus" '+(!isEdit?'disabled':'')+'><option '+(status==="Upcoming"?'selected':'')+'>Upcoming</option><option '+(status==="Done"?'selected':'')+'>Done</option><option '+(status==="Cancelled"?'selected':'')+'>Cancelled</option></select></label><label class="full">Reminder title<input id="evTitle" value="'+esc(event&&event.title||quoteMode?"Quotation Follow-up":"")+'" placeholder="e.g. Follow up quotation with customer"></label><label>Customer name<input id="evCustomer" value="'+esc(event&&event.customer_name||"")+'"></label><label>Contact number<input id="evContact" value="'+esc(event&&event.contact_number||"")+'"></label><label class="full">Notes<textarea id="evNotes" rows="3" placeholder="What should you remember or follow up?">'+esc(event&&event.notes||"")+'</textarea></label></div>'+(quoteMode?'<div class="paySummary"><div class="summaryRow"><span>Quotation items</span><strong>'+quote.items.reduce(function(a,x){return a+x.qty},0)+'</strong></div><div class="summaryRow totalLine"><span>Quotation total</span><strong>'+money(quote.total)+'</strong></div></div>':event&&event.quote_total?'<div class="paySummary"><div class="summaryRow"><span>Saved quotation</span><strong>'+money(event.quote_total)+'</strong></div></div>':'')+'<p id="evMsg" class="error"></p><button id="evSave" class="primary wide modalStickyAction">'+(isEdit?"Save Reminder":"Add Reminder")+'</button></div>';
-  document.body.append(m);m.querySelector(".close").onclick=function(){m.remove()};
-  evSave.onclick=async function(){if(!evDate.value||!evTitle.value.trim()){evMsg.textContent="Date and reminder title are required.";return}if(evType.value==="Quote Follow-up"&&!evCustomer.value.trim()){evMsg.textContent="Add the customer name for a quotation follow-up.";return}evSave.disabled=true;var tok=localStorage.getItem(TOKEN_KEY)||"",res;if(isEdit)res=await sb.rpc("kzies_update_calendar_local",{p_token:tok,p_event_id:Number(event.id),p_event_date:evDate.value,p_event_time:evTime.value||null,p_title:evTitle.value.trim(),p_event_type:evType.value,p_customer_name:evCustomer.value.trim(),p_contact_number:evContact.value.trim(),p_notes:evNotes.value.trim(),p_status:evStatus.value});else res=await sb.rpc("kzies_create_calendar_local",{p_token:tok,p_event_date:evDate.value,p_event_time:evTime.value||null,p_title:evTitle.value.trim(),p_event_type:evType.value,p_customer_name:evCustomer.value.trim(),p_contact_number:evContact.value.trim(),p_notes:evNotes.value.trim(),p_sale_id:null,p_quote_items:quote&&quote.items||[],p_quote_total:quote&&quote.total||0});if(res.error||!res.data||!res.data.ok){evMsg.textContent=(res.data&&res.data.error)||(res.error&&res.error.message)||"Unable to save reminder.";evSave.disabled=false;return}m.remove();await loadCalendar();S.calendarMonth=evDate.value.slice(0,7);toast(isEdit?"Reminder updated.":"Reminder added.");S.tab="Calendar";shell()}
+  event=event||null;quote=quote||null;
+  const isEdit=!!event,quoteMode=!!quote,types=["Note","Quote Follow-up","Customer Follow-up","Warranty","Delivery","Other"];
+  const defaultDate=event&&event.event_date?String(event.event_date).slice(0,10):phToday();
+  const typeValue=quoteMode?"Quote Follow-up":(event&&event.event_type?event.event_type:"Note");
+  const status=event&&event.status||"Upcoming";
+  const titleValue=event?(event.title||""):(quoteMode?"Quotation Follow-up":"");
+  const m=document.createElement("div");m.className="modalBg";
+  m.innerHTML='<div class="modal"><div class="modalHead"><h2>'+(isEdit?"Edit Calendar Entry":quoteMode?"Schedule Quote Follow-up":"Add Calendar Entry")+'</h2><button class="close">×</button></div>'+
+    '<div class="formGrid">'+
+    '<label>Date<input id="evDate" type="date" value="'+defaultDate+'"></label>'+
+    '<label>Time <span class="hint">(optional)</span><input id="evTime" type="time" value="'+(event&&event.event_time?String(event.event_time).slice(0,5):"")+'"></label>'+
+    '<label>Type<select id="evType">'+types.map(x=>'<option '+(x===typeValue?'selected':'')+'>'+x+'</option>').join("")+'</select></label>'+
+    '<label>Status<select id="evStatus" '+(!isEdit?'disabled':'')+'><option '+(status==="Upcoming"?'selected':'')+'>Upcoming</option><option '+(status==="Done"?'selected':'')+'>Done</option><option '+(status==="Cancelled"?'selected':'')+'>Cancelled</option></select></label>'+
+    '<label class="full">Title <span class="hint">(optional for Note)</span><input id="evTitle" value="'+esc(titleValue)+'" placeholder="Optional title for a simple note"></label>'+
+    '<div id="evCustomerFields" class="full formGrid"><label>Customer name<input id="evCustomer" value="'+esc(event&&event.customer_name||"")+'"></label><label>Contact number<input id="evContact" value="'+esc(event&&event.contact_number||"")+'"></label></div>'+
+    '<label class="full"><span id="evNotesLabel">'+(typeValue==="Note"?"Note":"Notes")+'</span><textarea id="evNotes" rows="5" placeholder="'+(typeValue==="Note"?"Type your note here…":"What should you remember or follow up?")+'">'+esc(event&&event.notes||"")+'</textarea></label>'+
+    '</div>'+
+    (quoteMode?'<div class="paySummary"><div class="summaryRow"><span>Quotation items</span><strong>'+quote.items.reduce((a,x)=>a+x.qty,0)+'</strong></div><div class="summaryRow totalLine"><span>Quotation total</span><strong>'+money(quote.total)+'</strong></div></div>':event&&event.quote_total?'<div class="paySummary"><div class="summaryRow"><span>Saved quotation</span><strong>'+money(event.quote_total)+'</strong></div></div>':'')+
+    '<p id="evMsg" class="error"></p><button id="evSave" class="primary wide modalStickyAction">'+(isEdit?"Save Changes":"Add to Calendar")+'</button></div>';
+  document.body.append(m);
+  m.querySelector(".close").onclick=()=>m.remove();
+
+  const syncType=()=>{
+    const noteMode=evType.value==="Note";
+    evCustomerFields.style.display=noteMode?"none":"grid";
+    evNotesLabel.textContent=noteMode?"Note":"Notes";
+    evNotes.placeholder=noteMode?"Type your note here…":"What should you remember or follow up?";
+    evTitle.placeholder=noteMode?"Optional. If blank, the note text becomes the title.":"Reminder title";
+  };
+  evType.onchange=syncType;syncType();
+
+  evSave.onclick=async()=>{
+    const notes=evNotes.value.trim();
+    let title=evTitle.value.trim();
+    if(!evDate.value){evMsg.textContent="Date is required.";return}
+    if(evType.value==="Note"){
+      if(!title&&!notes){evMsg.textContent="Type a note or add a title.";return}
+      if(!title)title=notes.slice(0,60)||"Note";
+    }else if(!title){
+      evMsg.textContent="Reminder title is required.";return
+    }
+    if(evType.value==="Quote Follow-up"&&!evCustomer.value.trim()){
+      evMsg.textContent="Add the customer name for a quotation follow-up.";return
+    }
+
+    evSave.disabled=true;evSave.textContent=isEdit?"Saving changes…":"Adding…";
+    const tok=localStorage.getItem(TOKEN_KEY)||"",targetMonth=evDate.value.slice(0,7);
+    let res;
+    if(isEdit){
+      res=await sb.rpc("kzies_update_calendar_local",{
+        p_token:tok,p_event_id:Number(event.id),p_event_date:evDate.value,p_event_time:evTime.value||null,
+        p_title:title,p_event_type:evType.value,p_customer_name:evType.value==="Note"?"":evCustomer.value.trim(),
+        p_contact_number:evType.value==="Note"?"":evContact.value.trim(),p_notes:notes,p_status:evStatus.value
+      });
+    }else{
+      res=await sb.rpc("kzies_create_calendar_local",{
+        p_token:tok,p_event_date:evDate.value,p_event_time:evTime.value||null,p_title:title,p_event_type:evType.value,
+        p_customer_name:evType.value==="Note"?"":evCustomer.value.trim(),p_contact_number:evType.value==="Note"?"":evContact.value.trim(),
+        p_notes:notes,p_sale_id:null,p_quote_items:quote&&quote.items||[],p_quote_total:quote&&quote.total||0
+      });
+    }
+    if(res.error||!res.data||!res.data.ok){
+      evMsg.textContent=(res.data&&res.data.error)||(res.error&&res.error.message)||"Unable to save calendar entry.";
+      evSave.disabled=false;evSave.textContent=isEdit?"Save Changes":"Add to Calendar";return
+    }
+    m.remove();await loadCalendar();scheduleAutoBackupSoon();S.calendarMonth=targetMonth;
+    toast(isEdit?"Calendar entry updated.":"Added to calendar.");S.tab="Calendar";shell();
+  };
 }
 function bindCalendarActions(){
-  document.querySelectorAll("[data-open-event]").forEach(function(b){b.onclick=function(){var e=S.events.find(function(x){return Number(x.id)===Number(b.dataset.openEvent)});if(e&&S.profile&&S.profile.app_role==="Admin")eventModal(e)}});
-  document.querySelectorAll("[data-edit-event]").forEach(function(b){b.onclick=function(){var e=S.events.find(function(x){return Number(x.id)===Number(b.dataset.editEvent)});if(e)eventModal(e)}});
-  document.querySelectorAll("[data-delete-event]").forEach(function(b){b.onclick=async function(){if(!confirm("Delete this reminder?"))return;var tok=localStorage.getItem(TOKEN_KEY)||"",res=await sb.rpc("kzies_delete_calendar_local",{p_token:tok,p_event_id:Number(b.dataset.deleteEvent)});if(res.error||!res.data||!res.data.ok){toast((res.data&&res.data.error)||(res.error&&res.error.message)||"Unable to delete reminder.");return}await loadCalendar();toast("Reminder deleted.");render()}})
+  document.querySelectorAll("[data-open-event]").forEach(function(b){b.onclick=function(){
+    const item=S.events.find(x=>Number(x.id)===Number(b.dataset.openEvent));
+    if(!item)return;
+    if(S.profile&&S.profile.app_role==="Admin")eventModal(item);
+    else toast("Admin access is required to edit calendar entries.");
+  }});
+  document.querySelectorAll("[data-edit-event]").forEach(function(b){b.onclick=function(){
+    const item=S.events.find(x=>Number(x.id)===Number(b.dataset.editEvent));
+    if(item)eventModal(item);
+  }});
+  document.querySelectorAll("[data-delete-event]").forEach(function(b){b.onclick=async function(){
+    if(!confirm("Delete this calendar entry?"))return;
+    const tok=localStorage.getItem(TOKEN_KEY)||"",res=await sb.rpc("kzies_delete_calendar_local",{p_token:tok,p_event_id:Number(b.dataset.deleteEvent)});
+    if(res.error||!res.data||!res.data.ok){toast((res.data&&res.data.error)||(res.error&&res.error.message)||"Unable to delete calendar entry.");return}
+    await loadCalendar();scheduleAutoBackupSoon();toast("Calendar entry deleted.");render();
+  }});
 }
 function editSaleModal(id){if(S.profile?.app_role!=='Admin')return;const x=S.sales.find(s=>Number(s.id)===id);if(!x)return;const methods=['Cash','E-Wallet','Online Banking','Credit Card'],baseAtOpen=Number(x.subtotal||0)+Number(x.delivery_fee||0),wasPartial=x.payment_method==='Credit Card'&&Number(x.non_card_amount||0)>0;const m=document.createElement('div');m.className='modalBg';m.innerHTML=`<div class="modal"><div class="modalHead"><h2>Edit Sale #${id}</h2><button class="close">×</button></div><div class="hint">Product items are preserved. Customer and payment details can be corrected here.</div><div class="formGrid"><label class="full">Customer name<input id="esName" value="${esc(x.customer_name)}"></label><label>Contact number<input id="esContact" value="${esc(x.contact_number)}"></label><label>ZIP code<input id="esZip" value="${esc(x.zip_code)}"></label><label class="full">Home No. / Street / Subdivision<input id="esAddress" value="${esc(x.address_line)}"></label><label>Barangay<input id="esBarangay" value="${esc(x.barangay)}"></label><label>City<input id="esCity" value="${esc(x.city)}"></label><label>Province<input id="esProvince" value="${esc(x.province)}"></label><label>Payment method<select id="esPayment">${methods.map(v=>`<option ${v===x.payment_method?'selected':''}>${v}</option>`).join('')}</select></label><label>Delivery fee<input id="esDelivery" type="number" min="0" step="0.01" value="${x.delivery_fee||''}"></label><label id="esRefWrap" style="display:${x.payment_method==='Cash'?'none':'block'}">Payment reference<input id="esPaymentRef" value="${esc(x.payment_reference||'')}"></label><div id="esCcBox" class="paymentBox" style="display:none"><h3>Credit Card Payment</h3><div class="hint">Choose whether the 3% card fee applies to the whole amount or only the amount charged to the card.</div><label>Credit Card charge<select id="esCoverage"><option value="Full" ${!wasPartial?'selected':''}>Full amount</option><option value="Partial" ${wasPartial?'selected':''}>Partial amount</option></select></label><label id="esCardAmountWrap" style="display:none">Amount charged to card<input id="esCardAmount" type="number" min="0" step="0.01" value="${x.payment_method==='Credit Card'?(x.credit_card_amount||baseAtOpen):''}"></label></div></div><div id="esSummary" class="paySummary"></div><p id="esMsg" class="error"></p><button id="esSave" class="primary wide modalStickyAction">Save Changes</button></div>`;document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
 
