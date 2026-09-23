@@ -44,7 +44,7 @@
 </style></head><body><div id="app"></div><script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 const SUPA='https://mffxrxjmznmchcametff.supabase.co',KEY='sb_publishable_ndVXcce6a8bOa_BXbH_GKQ_MIlK3g91',OWNER='kziesadmin',SHEET='https://docs.google.com/spreadsheets/u/1/d/17D0sMKGZoPiLS6tUEuSyVTzH2J552rJRXiIrMMUbXPY/edit?usp=drivesdk';
-const sb=createClient(SUPA,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}),app=document.getElementById('app');const TOKEN_KEY='kzies_pos_token';let S={profile:null,products:[],cart:[],sales:[],customers:[],refunds:[],warranties:[],events:[],supplierPurchases:[],staffs:[],invites:[],actionPasswordInfo:null,finance:null,invoiceInfo:null,tab:'POS',search:'',productCategory:'All Products',productStockFilter:'All',productSort:'name-asc',recentProductIds:[],calendarMonth:null,pages:{POS:1,Products:1,Sales:1,Reports:1,Quotation:1,Refunds:1,Warranties:1,Claims:1,Calendar:1,Customers:1,Accounts:1}};
+const sb=createClient(SUPA,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}),app=document.getElementById('app');const TOKEN_KEY='kzies_pos_token';let S={profile:null,products:[],cart:[],sales:[],customers:[],refunds:[],warranties:[],events:[],supplierPurchases:[],supplierReceiptFiles:[],staffs:[],invites:[],actionPasswordInfo:null,finance:null,invoiceInfo:null,tab:'POS',search:'',productCategory:'All Products',productStockFilter:'All',productSort:'name-asc',recentProductIds:[],calendarMonth:null,pages:{POS:1,Products:1,Sales:1,Reports:1,Quotation:1,Refunds:1,Warranties:1,Claims:1,Calendar:1,Customers:1,Accounts:1}};
 let backupDirectoryHandle=null,backupLastSaved=null,backupTimer=null,backupSoonTimer=null;
 const BACKUP_DB='kzies-findery-local-backup',BACKUP_STORE='handles',BACKUP_KEY='backup-folder';
 const GCASH_QR_MATRIX=["00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000","00001111111011010000000111101110111001001011111110000","00001000001001001111101100001100011101010010000010000","00001011101011101110000000111111100110010010111010000","00001011101000010010010010001000011010011010111010000","00001011101001111010110111111111100110111010111010000","00001000001010011000001010001000000111000010000010000","00001111111010101010101010101010101010101011111110000","00000000000000101011001010001011100000010000000000000","00001010001100100011011111111111101101001001001010000","00001101010010110111100110010001000110010110010000000","00001101001011110110011001111001011101101010111110000","00000001100101110101010111010011100000110110000000000","00001001011000000001010111010110010111011111110110000","00000110110000110111101110001000001011000000000110000","00001010101001011010001000110001101010010101100100000","00000101000010000101000110001000001100010001110110000","00000011111110010101101001100111011101010101111100000","00001110100001111010110100110100100010010101100110000","00000111111101000100000111111100101010111110000110000","00000011000010110000111100100010000111100000100110000","00000100111111010010100011111111101100101111100100000","00001100100010011110001010001000000100101000100010000","00001001101011010110011110101111100100011010100110000","00000111100011111111100010001001101001101000100000000","00001111111111101110111111111111011110111111110100000","00000010010001101011100101010010010000100010010000000","00000101101000000001001000101001011100010111110110000","00001011010000000111111100000001001010001001101100000","00001101011001010011111100111101101111110110001010000","00001001010110100100101101001110101111011100001100000","00001100101000000011111011101100001110011011010010000","00001011000000110100100100010001001110001010110000000","00001000011111110110100000011100001101111001111110000","00000100110010101000100101010000000111000000100000000","00000000101000101010111001111001000010100111010010000","00000111100011101001010110000010010110010001010000000","00001001101001010100101011111001101100101111100010000","00000000000010111000100110001110011100101000110010000","00001111111011101000111110101111100011011010111110000","00001000001000000101001110001111101100011000100000000","00001011101001010010101111111111101100111111111010000","00001011101000110010101110111010010000110100001000000","00001011101010111100000011110011010110010010101110000","00001000001001110100111010110001001011110000000100000","00001111111011001001001101111011001111001000110110000","00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000"];
@@ -160,7 +160,7 @@ async function products(){
  }catch(e){console.error('Unable to load products',e);S.products=[]}
 }
 async function businessData(){await Promise.all([loadSales(),loadCustomers(),loadRefunds(),loadWarranties(),loadCalendar(),S.profile?.app_role==='Admin'?loadSupplierPurchases():Promise.resolve()]);scheduleAutoBackupSoon()}
-async function loadSupplierPurchases(){try{const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_list_supplier_purchases_local',{p_token:tok});if(error||!data?.ok)throw new Error(data?.error||error?.message);S.supplierPurchases=(data.purchases||[]).map(x=>({...x,quantity:Number(x.quantity||0),unit_cost:Number(x.unit_cost||0),capital_cost:Number(x.capital_cost||0)}))}catch(e){console.error('Unable to load supplier purchases',e);S.supplierPurchases=[]}}
+async function loadSupplierPurchases(){try{const tok=localStorage.getItem(TOKEN_KEY)||'';const [{data,error},{data:fileData,error:fileError}]=await Promise.all([sb.rpc('kzies_list_supplier_purchases_local',{p_token:tok}),sb.rpc('kzies_list_supplier_receipt_files_local',{p_token:tok})]);if(error||!data?.ok)throw new Error(data?.error||error?.message);if(fileError||!fileData?.ok)throw new Error(fileData?.error||fileError?.message);S.supplierPurchases=(data.purchases||[]).map(x=>({...x,quantity:Number(x.quantity||0),unit_cost:Number(x.unit_cost||0),capital_cost:Number(x.capital_cost||0)}));S.supplierReceiptFiles=fileData.files||[]}catch(e){console.error('Unable to load supplier purchases',e);S.supplierPurchases=[];S.supplierReceiptFiles=[]}}
 async function loadRefunds(){try{const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_list_refunds_local',{p_token:tok});if(error||!data?.ok)throw new Error(data?.error||error?.message);S.refunds=(data.refunds||[]).map(x=>({...x,quantity:Number(x.quantity||0),refund_amount:Number(x.refund_amount||0)}))}catch(e){console.error('Unable to load refunds',e);S.refunds=[]}}
 async function loadWarranties(){try{const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_list_warranties_local',{p_token:tok});if(error||!data?.ok)throw new Error(data?.error||error?.message);S.warranties=(data.warranties||[]).map(x=>({...x,quantity:Number(x.quantity||0)}))}catch(e){console.error('Unable to load warranties',e);S.warranties=[]}}
 async function loadCalendar(){try{const tok=localStorage.getItem(TOKEN_KEY)||'';const {data,error}=await sb.rpc('kzies_list_calendar_local',{p_token:tok});if(error||!data?.ok)throw new Error(data?.error||error?.message);S.events=(data.events||[]).map(x=>({...x,quote_total:Number(x.quote_total||0)}))}catch(e){console.error('Unable to load calendar',e);S.events=[]}}
@@ -433,45 +433,55 @@ function supplierInvoiceGroups(rows){
   }
   return [...map.values()].sort((a,b)=>String(b.purchase_date||b.created_at||'').localeCompare(String(a.purchase_date||a.created_at||'')));
 }
-async function uploadSupplierReceipt(movementIds){
+function supplierFileKey(supplier,receipt,date){return [String(supplier||'').trim().toLowerCase(),String(receipt||'').trim().toLowerCase(),date?String(date).slice(0,10):''].join('||')}
+function receiptFilesForGroup(g){const key=supplierFileKey(g.supplier_name,g.receipt_number,g.purchase_date);return (S.supplierReceiptFiles||[]).filter(x=>supplierFileKey(x.supplier_name,x.receipt_number,x.purchase_date)===key)}
+async function uploadSupplierReceipt(groupKey){
   if(S.profile?.app_role!=='Admin')return;
-  const ids=Array.isArray(movementIds)?movementIds.map(Number):[Number(movementIds)];
-  const input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp,application/pdf';
+  const groups=supplierInvoiceGroups(S.supplierPurchases||[]),g=groups.find(x=>x.key===decodeURIComponent(groupKey)||x.key===groupKey);
+  if(!g){toast('Supplier invoice not found.');return}
+  const input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/jpeg,image/webp,application/pdf';
   input.onchange=async()=>{
-    const file=input.files&&input.files[0];if(!file)return;
+    const files=[...(input.files||[])];if(!files.length)return;
     try{
-      toast('Preparing official receipt…');
-      const dataUrl=await prepareReceiptFile(file),tok=localStorage.getItem(TOKEN_KEY)||'';
-      for(const movementId of ids){
-        const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:movementId,p_file_name:file.name,p_mime_type:file.type,p_data_url:dataUrl});
+      toast('Preparing '+files.length+' receipt file'+(files.length>1?'s':'')+'…');
+      const tok=localStorage.getItem(TOKEN_KEY)||'';
+      for(const file of files){
+        const dataUrl=await prepareReceiptFile(file);
+        const {data,error}=await sb.rpc('kzies_add_supplier_receipt_file_local',{
+          p_token:tok,p_supplier_name:g.supplier_name,p_receipt_number:g.receipt_number||'',
+          p_purchase_date:g.purchase_date||null,p_file_name:file.name,p_mime_type:file.type,p_data_url:dataUrl
+        });
         if(error||!data?.ok)throw new Error(data?.error||error?.message||'Unable to upload receipt.');
       }
-      await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt saved to the whole supplier invoice.');render();
+      await loadSupplierPurchases();scheduleAutoBackupSoon();toast(files.length+' receipt file'+(files.length>1?'s':'')+' saved.');render();
     }catch(e){toast(e.message||'Unable to upload receipt.')}
   };
   input.click();
 }
-async function viewSupplierReceipt(movementId){
-  const tok=localStorage.getItem(TOKEN_KEY)||'';
-  const {data,error}=await sb.rpc('kzies_get_supplier_receipt_local',{p_token:tok,p_movement_id:Number(movementId)});
-  if(error||!data?.ok||!data.data_url){toast(data?.error||error?.message||'No official receipt uploaded.');return}
+function viewSupplierReceipts(groupKey,startId){
+  const groups=supplierInvoiceGroups(S.supplierPurchases||[]),g=groups.find(x=>x.key===decodeURIComponent(groupKey)||x.key===groupKey);
+  if(!g)return;
+  const files=receiptFilesForGroup(g);if(!files.length){toast('No receipt photos uploaded yet.');return}
+  let idx=Math.max(0,files.findIndex(x=>Number(x.id)===Number(startId)));if(idx<0)idx=0;
   const m=document.createElement('div');m.className='modalBg';
-  const body=String(data.mime_type||'').includes('pdf')
-    ?'<iframe src="'+data.data_url+'" style="width:min(850px,90vw);height:72vh;border:0;background:#fff"></iframe>'
-    :'<img src="'+data.data_url+'" alt="Official receipt" style="display:block;max-width:min(850px,90vw);max-height:72vh;margin:auto;object-fit:contain;background:#fff">';
-  m.innerHTML='<div class="modal" style="width:auto"><div class="modalHead"><h2>Official Receipt • '+esc(data.file_name||'Receipt')+'</h2><button class="close">×</button></div>'+body+'<div class="actionRow" style="margin-top:12px"><button id="receiptDownload" class="secondary">Download Copy</button></div></div>';
+  m.innerHTML='<div class="modal" style="width:min(920px,94vw)"><div class="modalHead"><h2>Official Receipts • '+esc(g.supplier_name)+'</h2><button class="close">×</button></div><div id="receiptGalleryBody"></div><div class="actionRow" style="margin-top:12px"><button id="receiptPrev" class="secondary">← Previous</button><span id="receiptCount" class="hint"></span><button id="receiptNext" class="secondary">Next →</button><button id="receiptDownload" class="secondary">Download Copy</button><button id="receiptDeleteOne" class="danger">Delete This Photo</button></div></div>';
   document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
-  receiptDownload.onclick=()=>{const a=document.createElement('a');a.href=data.data_url;a.download=data.file_name||'official-receipt';document.body.append(a);a.click();a.remove()};
-}
-async function removeSupplierReceipt(movementIds){
-  const ids=Array.isArray(movementIds)?movementIds.map(Number):[Number(movementIds)];
-  if(!confirm('Remove the uploaded official receipt from this whole supplier invoice?'))return;
-  const tok=localStorage.getItem(TOKEN_KEY)||'';
-  for(const movementId of ids){
-    const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:movementId,p_file_name:'',p_mime_type:'',p_data_url:''});
-    if(error||!data?.ok){toast(data?.error||error?.message||'Unable to remove receipt.');return}
-  }
-  await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt removed from the supplier invoice.');render();
+  const draw=()=>{
+    const f=files[idx],isPdf=String(f.mime_type||'').includes('pdf');
+    receiptGalleryBody.innerHTML=isPdf?'<iframe src="'+f.data_url+'" style="width:100%;height:68vh;border:0;background:#fff"></iframe>':'<img src="'+f.data_url+'" alt="Official receipt" style="display:block;max-width:100%;max-height:68vh;margin:auto;object-fit:contain;background:#fff">';
+    receiptCount.textContent=(idx+1)+' of '+files.length+' • '+(f.file_name||'Receipt');
+    receiptPrev.disabled=idx===0;receiptNext.disabled=idx===files.length-1;
+    receiptDownload.onclick=()=>{const a=document.createElement('a');a.href=f.data_url;a.download=f.file_name||'official-receipt';document.body.append(a);a.click();a.remove()};
+    receiptDeleteOne.onclick=async()=>{
+      if(!confirm('Delete this receipt photo/file?'))return;
+      const tok=localStorage.getItem(TOKEN_KEY)||'',{data,error}=await sb.rpc('kzies_delete_supplier_receipt_file_local',{p_token:tok,p_file_id:Number(f.id)});
+      if(error||!data?.ok){toast(data?.error||error?.message||'Unable to delete receipt.');return}
+      await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Receipt file deleted.');m.remove();render();
+    };
+  };
+  receiptPrev.onclick=()=>{if(idx>0){idx--;draw()}};
+  receiptNext.onclick=()=>{if(idx<files.length-1){idx++;draw()}};
+  draw();
 }
 function supplierWarrantyClass(dateStr){
   if(!dateStr)return'';
@@ -485,7 +495,7 @@ function supplierView(c){
   const selected=String(S.supplierFilter||'All Suppliers'),
         filtered=selected==='All Suppliers'?groups:groups.filter(x=>x.supplier_name===selected),
         invoices=pageSlice(filtered,'Suppliers'),
-        uploaded=groups.filter(x=>x.has_official_receipt).length,
+        uploaded=groups.filter(x=>receiptFilesForGroup(x).length>0).length,
         totalSpend=groups.reduce((a,x)=>a+Number(x.capital_cost||0),0);
 
   c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Suppliers & Purchase Receipts</h2><div class="hint">One row = one supplier invoice/order. Products from the same invoice are grouped together.</div></div></div>'+
@@ -497,15 +507,14 @@ function supplierView(c){
       const ids=g.movement_ids.join(',');
       const productList=g.items.map(x=>'<div><b>'+esc(x.product_name||'Product')+'</b> × '+Number(x.quantity||0)+' <span class="hint">('+money(x.unit_cost)+' each)</span></div>').join('');
       const safeKey=encodeURIComponent(g.key);
-      return '<tr><td><b>'+esc(g.supplier_name)+'</b></td><td><b>'+esc(g.receipt_number||'—')+'</b></td><td><button class="secondary miniBtn" data-toggle-supplier-products="'+safeKey+'">View Products ('+g.items.length+')</button><div data-supplier-products="'+safeKey+'" style="display:none;margin-top:8px">'+productList+'</div></td><td><b>'+g.quantity+'</b></td><td><b>'+money(g.capital_cost)+'</b></td><td>'+(g.purchase_date?fmtDate(g.purchase_date):'—')+'</td><td class="'+supplierWarrantyClass(g.supplier_warranty_until)+'">'+(g.supplier_warranty_until?fmtDate(String(g.supplier_warranty_until).slice(0,10)):'—')+'</td><td>'+(g.has_official_receipt?'<span class="receiptStatus yes">✓ Uploaded</span><div class="hint">'+esc(g.official_receipt_name||'Receipt')+'</div>':'<span class="receiptStatus no">Not uploaded</span>')+'</td><td>'+esc(g.receipt_notes||'—')+'</td><td><div class="actionRow">'+(g.has_official_receipt?'<button class="secondary miniBtn" data-view-supplier-receipt="'+g.official_receipt_movement_id+'">View</button><button class="secondary miniBtn" data-upload-supplier-receipt="'+ids+'">Replace</button><button class="danger miniBtn" data-remove-supplier-receipt="'+ids+'">Remove</button>':'<button class="primary miniBtn" data-upload-supplier-receipt="'+ids+'">Upload OR</button>')+'</div></td></tr>';
+      const files=receiptFilesForGroup(g);return '<tr><td><b>'+esc(g.supplier_name)+'</b></td><td><b>'+esc(g.receipt_number||'—')+'</b></td><td><button class="secondary miniBtn" data-toggle-supplier-products="'+safeKey+'">View Products ('+g.items.length+')</button><div data-supplier-products="'+safeKey+'" style="display:none;margin-top:8px">'+productList+'</div></td><td><b>'+g.quantity+'</b></td><td><b>'+money(g.capital_cost)+'</b></td><td>'+(g.purchase_date?fmtDate(g.purchase_date):'—')+'</td><td class="'+supplierWarrantyClass(g.supplier_warranty_until)+'">'+(g.supplier_warranty_until?fmtDate(String(g.supplier_warranty_until).slice(0,10)):'—')+'</td><td>'+(files.length?'<span class="receiptStatus yes">✓ '+files.length+' file'+(files.length>1?'s':'')+'</span>':'<span class="receiptStatus no">Not uploaded</span>')+'</td><td>'+esc(g.receipt_notes||'—')+'</td><td><div class="actionRow">'+(files.length?'<button class="secondary miniBtn" data-view-supplier-files="'+safeKey+'">View Receipts</button>':'')+'<button class="primary miniBtn" data-upload-supplier-files="'+safeKey+'">'+(files.length?'Add More':'Upload Receipts')+'</button></div></td></tr>';
     }).join(''):'<tr><td colspan="10" class="empty">No supplier purchases yet. Add supplier details when receiving stock.</td></tr>')+
     '</tbody></table></div>'+pager(filtered,'Suppliers');
 
   supplierFilter.onchange=()=>{S.supplierFilter=supplierFilter.value;S.pages.Suppliers=1;render()};
-  document.querySelectorAll('[data-upload-supplier-receipt]').forEach(b=>b.onclick=()=>uploadSupplierReceipt(String(b.dataset.uploadSupplierReceipt).split(',').filter(Boolean).map(Number)));
-  document.querySelectorAll('[data-view-supplier-receipt]').forEach(b=>b.onclick=()=>viewSupplierReceipt(Number(b.dataset.viewSupplierReceipt)));
-  document.querySelectorAll('[data-remove-supplier-receipt]').forEach(b=>b.onclick=()=>removeSupplierReceipt(String(b.dataset.removeSupplierReceipt).split(',').filter(Boolean).map(Number)));
-  document.querySelectorAll('[data-toggle-supplier-products]').forEach(b=>b.onclick=()=>{const key=b.dataset.toggleSupplierProducts,box=document.querySelector('[data-supplier-products="'+key+'"]');if(!box)return;const open=box.style.display!=='none';box.style.display=open?'none':'block';const count=(box.children&&box.children.length)||0;b.textContent=open?'View Products ('+count+')':'Hide Products';});
+  document.querySelectorAll('[data-upload-supplier-files]').forEach(b=>b.onclick=()=>uploadSupplierReceipt(b.dataset.uploadSupplierFiles));
+  document.querySelectorAll('[data-view-supplier-files]').forEach(b=>b.onclick=()=>viewSupplierReceipts(b.dataset.viewSupplierFiles));
+    document.querySelectorAll('[data-toggle-supplier-products]').forEach(b=>b.onclick=()=>{const key=b.dataset.toggleSupplierProducts,box=document.querySelector('[data-supplier-products="'+key+'"]');if(!box)return;const open=box.style.display!=='none';box.style.display=open?'none':'block';const count=(box.children&&box.children.length)||0;b.textContent=open?'View Products ('+count+')':'Hide Products';});
   bindPager();
 }
 
