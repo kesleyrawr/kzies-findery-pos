@@ -837,8 +837,8 @@ function checkoutModal(){
   let addressCtl=null,applyingCustomer=false;
   setupPhAddress(coProvince,coCity,coBarangay,{}).then(x=>addressCtl=x);
   const currentSubtotal=()=>coPricing.value==='No Markup'?S.cart.reduce((a,p)=>a+Number(p.wholesale||0)*p.qty,0):normalSubtotal;
-  const pointsToEarn=()=>loyaltyPointsForSpend(currentSubtotal());
-  function refreshPricing(){const noMarkup=coPricing.value==='No Markup',sub=currentSubtotal(),saved=Math.max(0,normalSubtotal-sub);coProductSubtotal.textContent=money(sub);coPricingHint.innerHTML=noMarkup?'<b>No Markup active.</b> Items use Wholesale Price. Savings vs normal price: <b>'+money(saved)+'</b>.':'Normal selling price applies.';}
+  const pointsToEarn=()=>coPricing.value==='No Markup'?0:loyaltyPointsForSpend(currentSubtotal());
+  function refreshPricing(){const noMarkup=coPricing.value==='No Markup',sub=currentSubtotal(),saved=Math.max(0,normalSubtotal-sub);coProductSubtotal.textContent=money(sub);coPricingHint.innerHTML=noMarkup?'<b>No Markup active.</b> Items use Wholesale Price. Savings vs normal price: <b>'+money(saved)+'</b>. Loyalty points: <b>0 pts</b>.':'Normal selling price applies.';}
   function refreshPointsPreview(customer=null){
     const walkin=coWalkIn.checked||coCustomerChoice.value==='__walkin';
     if(walkin){coPointsPreview.innerHTML='<b>0 pts</b><div class="hint">Walk-in sales do not keep loyalty points. Choose or create a saved customer to earn points.</div>';return}
