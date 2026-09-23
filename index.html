@@ -409,17 +409,44 @@ async function prepareReceiptFile(file){
   ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
   return cv.toDataURL('image/jpeg',0.8);
 }
-async function uploadSupplierReceipt(movementId){
+function supplierInvoiceGroups(rows){
+  const map=new Map();
+  for(const x of rows||[]){
+    const supplier=String(x.supplier_name||'').trim();
+    const receipt=String(x.receipt_number||'').trim();
+    const purchaseDate=x.purchase_date?String(x.purchase_date).slice(0,10):'';
+    const fallbackDay=x.created_at?String(x.created_at).slice(0,10):'';
+    const key=[supplier.toLowerCase(),receipt.toLowerCase(),purchaseDate||fallbackDay].join('||');
+    if(!map.has(key))map.set(key,{
+      key,supplier_name:supplier,receipt_number:receipt,purchase_date:purchaseDate,
+      supplier_warranty_until:x.supplier_warranty_until||null,receipt_notes:x.receipt_notes||'',
+      items:[],movement_ids:[],capital_cost:0,quantity:0,has_official_receipt:false,
+      official_receipt_name:'',official_receipt_movement_id:null,created_at:x.created_at
+    });
+    const g=map.get(key);
+    g.items.push(x);g.movement_ids.push(Number(x.movement_id));g.capital_cost+=Number(x.capital_cost||0);g.quantity+=Number(x.quantity||0);
+    if(x.supplier_warranty_until&&(!g.supplier_warranty_until||String(x.supplier_warranty_until)>String(g.supplier_warranty_until)))g.supplier_warranty_until=x.supplier_warranty_until;
+    if(!g.receipt_notes&&x.receipt_notes)g.receipt_notes=x.receipt_notes;
+    if(x.has_official_receipt&&!g.has_official_receipt){
+      g.has_official_receipt=true;g.official_receipt_name=x.official_receipt_name||'Receipt';g.official_receipt_movement_id=Number(x.movement_id);
+    }
+  }
+  return [...map.values()].sort((a,b)=>String(b.purchase_date||b.created_at||'').localeCompare(String(a.purchase_date||a.created_at||'')));
+}
+async function uploadSupplierReceipt(movementIds){
   if(S.profile?.app_role!=='Admin')return;
+  const ids=Array.isArray(movementIds)?movementIds.map(Number):[Number(movementIds)];
   const input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp,application/pdf';
   input.onchange=async()=>{
     const file=input.files&&input.files[0];if(!file)return;
     try{
       toast('Preparing official receipt…');
       const dataUrl=await prepareReceiptFile(file),tok=localStorage.getItem(TOKEN_KEY)||'';
-      const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:Number(movementId),p_file_name:file.name,p_mime_type:file.type,p_data_url:dataUrl});
-      if(error||!data?.ok)throw new Error(data?.error||error?.message||'Unable to upload receipt.');
-      await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt saved.');render();
+      for(const movementId of ids){
+        const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:movementId,p_file_name:file.name,p_mime_type:file.type,p_data_url:dataUrl});
+        if(error||!data?.ok)throw new Error(data?.error||error?.message||'Unable to upload receipt.');
+      }
+      await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt saved to the whole supplier invoice.');render();
     }catch(e){toast(e.message||'Unable to upload receipt.')}
   };
   input.click();
@@ -436,12 +463,15 @@ async function viewSupplierReceipt(movementId){
   document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
   receiptDownload.onclick=()=>{const a=document.createElement('a');a.href=data.data_url;a.download=data.file_name||'official-receipt';document.body.append(a);a.click();a.remove()};
 }
-async function removeSupplierReceipt(movementId){
-  if(!confirm('Remove the uploaded official receipt from this supplier purchase?'))return;
+async function removeSupplierReceipt(movementIds){
+  const ids=Array.isArray(movementIds)?movementIds.map(Number):[Number(movementIds)];
+  if(!confirm('Remove the uploaded official receipt from this whole supplier invoice?'))return;
   const tok=localStorage.getItem(TOKEN_KEY)||'';
-  const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:Number(movementId),p_file_name:'',p_mime_type:'',p_data_url:''});
-  if(error||!data?.ok){toast(data?.error||error?.message||'Unable to remove receipt.');return}
-  await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt removed.');render();
+  for(const movementId of ids){
+    const {data,error}=await sb.rpc('kzies_save_supplier_receipt_local',{p_token:tok,p_movement_id:movementId,p_file_name:'',p_mime_type:'',p_data_url:''});
+    if(error||!data?.ok){toast(data?.error||error?.message||'Unable to remove receipt.');return}
+  }
+  await loadSupplierPurchases();scheduleAutoBackupSoon();toast('Official receipt removed from the supplier invoice.');render();
 }
 function supplierWarrantyClass(dateStr){
   if(!dateStr)return'';
@@ -450,20 +480,30 @@ function supplierWarrantyClass(dateStr){
 }
 function supplierView(c){
   if(S.profile?.app_role!=='Admin'){c.innerHTML='<div class="empty">Admin access required.</div>';return}
-  const rows=S.supplierPurchases||[],names=[...new Set(rows.map(x=>x.supplier_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  const selected=String(S.supplierFilter||'All Suppliers'),filtered=selected==='All Suppliers'?rows:rows.filter(x=>x.supplier_name===selected);
-  const batches=pageSlice(filtered,'Suppliers'),uploaded=rows.filter(x=>x.has_official_receipt).length,totalSpend=rows.reduce((a,x)=>a+Number(x.capital_cost||0),0);
-  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Suppliers & Purchase Receipts</h2><div class="hint">Supplier purchase batches come automatically from Stock In / Opening Stock.</div></div></div>'+
-    '<div class="metricGrid"><div class="metric">Suppliers<b>'+names.length+'</b></div><div class="metric">Purchase Batches<b>'+rows.length+'</b></div><div class="metric">Receipts Uploaded<b>'+uploaded+'</b></div><div class="metric">Inventory Purchased<b>'+money(totalSpend)+'</b></div></div>'+
-    '<div class="stockHelp"><b>Techtime:</b> supplier warranty defaults to <b>3 months from the Purchase Date</b>. You may still override the warranty date for an exceptional receipt.</div>'+
-    '<div class="supplierToolbar"><label>SUPPLIER<select id="supplierFilter"><option>All Suppliers</option>'+names.map(x=>'<option '+(x===selected?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label><div class="label" style="margin-bottom:10px">'+filtered.length+' PURCHASE BATCHES</div></div>'+
-    '<div class="light tableWrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Product</th><th>Qty</th><th>Purchase Cost</th><th>Receipt / Invoice No.</th><th>Purchase Date</th><th>Warranty Until</th><th>Official Receipt</th><th>Notes</th><th>Actions</th></tr></thead><tbody>'+
-    (batches.length?batches.map(x=>'<tr><td><b>'+esc(x.supplier_name)+'</b></td><td><b>'+esc(x.product_name||'Product')+'</b><div class="hint">'+esc(x.product_brand||'')+'</div></td><td>'+x.quantity+'</td><td>'+money(x.capital_cost)+'</td><td><b>'+esc(x.receipt_number||'—')+'</b></td><td>'+(x.purchase_date?fmtDate(String(x.purchase_date).slice(0,10)):'—')+'</td><td class="'+supplierWarrantyClass(x.supplier_warranty_until)+'">'+(x.supplier_warranty_until?fmtDate(String(x.supplier_warranty_until).slice(0,10)):'—')+'</td><td>'+(x.has_official_receipt?'<span class="receiptStatus yes">✓ Uploaded</span><div class="hint">'+esc(x.official_receipt_name||'Receipt')+'</div>':'<span class="receiptStatus no">Not uploaded</span>')+'</td><td>'+esc(x.receipt_notes||'—')+'</td><td><div class="actionRow">'+(x.has_official_receipt?'<button class="secondary miniBtn" data-view-supplier-receipt="'+x.movement_id+'">View</button><button class="secondary miniBtn" data-upload-supplier-receipt="'+x.movement_id+'">Replace</button><button class="danger miniBtn" data-remove-supplier-receipt="'+x.movement_id+'">Remove</button>':'<button class="primary miniBtn" data-upload-supplier-receipt="'+x.movement_id+'">Upload OR</button>')+'</div></td></tr>').join(''):'<tr><td colspan="10" class="empty">No supplier purchases yet. Add supplier details when receiving stock.</td></tr>')+
+  const rows=S.supplierPurchases||[],groups=supplierInvoiceGroups(rows),
+        names=[...new Set(groups.map(x=>x.supplier_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const selected=String(S.supplierFilter||'All Suppliers'),
+        filtered=selected==='All Suppliers'?groups:groups.filter(x=>x.supplier_name===selected),
+        invoices=pageSlice(filtered,'Suppliers'),
+        uploaded=groups.filter(x=>x.has_official_receipt).length,
+        totalSpend=groups.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+
+  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Suppliers & Purchase Receipts</h2><div class="hint">One row = one supplier invoice/order. Products from the same invoice are grouped together.</div></div></div>'+
+    '<div class="metricGrid"><div class="metric">Suppliers<b>'+names.length+'</b></div><div class="metric">Supplier Invoices<b>'+groups.length+'</b></div><div class="metric">Receipts Uploaded<b>'+uploaded+'</b></div><div class="metric">Inventory Purchased<b>'+money(totalSpend)+'</b></div></div>'+
+    '<div class="stockHelp"><b>Techtime:</b> supplier warranty defaults to <b>3 months from the Purchase Date</b>. One Official Receipt is stored across all products in the same invoice.</div>'+
+    '<div class="supplierToolbar"><label>SUPPLIER<select id="supplierFilter"><option>All Suppliers</option>'+names.map(x=>'<option '+(x===selected?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label><div class="label" style="margin-bottom:10px">'+filtered.length+' SUPPLIER INVOICES</div></div>'+
+    '<div class="light tableWrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Receipt / Invoice No.</th><th>Products in this Order</th><th>Total Qty</th><th>Total Purchase Cost</th><th>Purchase Date</th><th>Warranty Until</th><th>Official Receipt</th><th>Notes</th><th>Actions</th></tr></thead><tbody>'+
+    (invoices.length?invoices.map(g=>{
+      const ids=g.movement_ids.join(',');
+      const productList=g.items.map(x=>'<div><b>'+esc(x.product_name||'Product')+'</b> × '+Number(x.quantity||0)+' <span class="hint">('+money(x.unit_cost)+' each)</span></div>').join('');
+      return '<tr><td><b>'+esc(g.supplier_name)+'</b></td><td><b>'+esc(g.receipt_number||'—')+'</b></td><td>'+productList+'</td><td><b>'+g.quantity+'</b></td><td><b>'+money(g.capital_cost)+'</b></td><td>'+(g.purchase_date?fmtDate(g.purchase_date):'—')+'</td><td class="'+supplierWarrantyClass(g.supplier_warranty_until)+'">'+(g.supplier_warranty_until?fmtDate(String(g.supplier_warranty_until).slice(0,10)):'—')+'</td><td>'+(g.has_official_receipt?'<span class="receiptStatus yes">✓ Uploaded</span><div class="hint">'+esc(g.official_receipt_name||'Receipt')+'</div>':'<span class="receiptStatus no">Not uploaded</span>')+'</td><td>'+esc(g.receipt_notes||'—')+'</td><td><div class="actionRow">'+(g.has_official_receipt?'<button class="secondary miniBtn" data-view-supplier-receipt="'+g.official_receipt_movement_id+'">View</button><button class="secondary miniBtn" data-upload-supplier-receipt="'+ids+'">Replace</button><button class="danger miniBtn" data-remove-supplier-receipt="'+ids+'">Remove</button>':'<button class="primary miniBtn" data-upload-supplier-receipt="'+ids+'">Upload OR</button>')+'</div></td></tr>';
+    }).join(''):'<tr><td colspan="10" class="empty">No supplier purchases yet. Add supplier details when receiving stock.</td></tr>')+
     '</tbody></table></div>'+pager(filtered,'Suppliers');
+
   supplierFilter.onchange=()=>{S.supplierFilter=supplierFilter.value;S.pages.Suppliers=1;render()};
-  document.querySelectorAll('[data-upload-supplier-receipt]').forEach(b=>b.onclick=()=>uploadSupplierReceipt(Number(b.dataset.uploadSupplierReceipt)));
+  document.querySelectorAll('[data-upload-supplier-receipt]').forEach(b=>b.onclick=()=>uploadSupplierReceipt(String(b.dataset.uploadSupplierReceipt).split(',').filter(Boolean).map(Number)));
   document.querySelectorAll('[data-view-supplier-receipt]').forEach(b=>b.onclick=()=>viewSupplierReceipt(Number(b.dataset.viewSupplierReceipt)));
-  document.querySelectorAll('[data-remove-supplier-receipt]').forEach(b=>b.onclick=()=>removeSupplierReceipt(Number(b.dataset.removeSupplierReceipt)));
+  document.querySelectorAll('[data-remove-supplier-receipt]').forEach(b=>b.onclick=()=>removeSupplierReceipt(String(b.dataset.removeSupplierReceipt).split(',').filter(Boolean).map(Number)));
   bindPager();
 }
 
