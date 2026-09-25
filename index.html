@@ -308,7 +308,7 @@ function productEditorModal(p){
     '<div id="'+prefix+'ChinaBox" class="full paymentBox" style="display:none"><h3>China Import Cost Calculator</h3><div class="hint">Enter the actual exchange rate used for this purchase. CNY costing stays separate from your normal Retail / Wholesale / Selling (+15%) prices.</div><div class="formGrid">'+
     '<label>CNY Unit Cost (¥)<input id="'+prefix+'CnyCost" type="number" min="0" step="0.01" value="'+(p&&p.china_cny_unit_cost!=null?p.china_cny_unit_cost:'')+'" placeholder="e.g. 100"></label>'+
     '<label>Qty Bought<input id="'+prefix+'ChinaQty" type="number" min="1" step="1" value="'+(p&&p.china_qty_bought!=null?p.china_qty_bought:'')+'" placeholder="e.g. 5"></label>'+
-    '<label>CNY → PHP Rate<input id="'+prefix+'ChinaRate" type="number" min="0" step="0.0001" value="'+(p&&p.china_exchange_rate!=null?p.china_exchange_rate:'')+'" placeholder="1 CNY = ₱..."></label>'+
+    '<label>CNY → PHP Rate<div class="actionRow" style="gap:6px"><input id="'+prefix+'ChinaRate" type="number" min="0" step="0.0001" value="'+(p&&p.china_exchange_rate!=null?p.china_exchange_rate:'')+'" placeholder="Auto rate"><button id="'+prefix+'FxRefresh" type="button" class="secondary miniBtn">↻ Auto</button></div><span id="'+prefix+'FxStatus" class="hint">Rate can still be edited manually.</span></label>'+
     '<label>Converted PHP / Unit<input id="'+prefix+'PhpUnit" type="text" readonly></label>'+
     '</div><div id="'+prefix+'ChinaCalc" class="paySummary" style="margin-top:10px"></div></div>'+
     '<label class="full walkinRow"><input id="'+prefix+'Active" type="checkbox" '+(!p||p.is_active!==false?'checked':'')+'> Active product <span class="hint">Inactive products stay saved but are hidden from POS and normal categories.</span></label>'+
@@ -318,6 +318,26 @@ function productEditorModal(p){
   document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
   const photo=attachProductPhotoEditor(prefix,p&&p.image_data||'');
   const by=id=>document.getElementById(prefix+id);
+  let fxLoading=false;
+  async function fetchCnyPhpRate(force=false){
+    if(fxLoading)return;
+    if(!force&&by('ChinaRate').value!=='')return;
+    fxLoading=true;by('FxRefresh').disabled=true;by('FxRefresh').textContent='…';by('FxStatus').textContent='Getting latest CNY → PHP rate…';
+    try{
+      const r=await fetch('https://api.frankfurter.dev/v2/rate/CNY/PHP',{cache:'no-store'});
+      if(!r.ok)throw new Error('Rate service unavailable');
+      const d=await r.json(),rate=Number(d?.rate);
+      if(!Number.isFinite(rate)||rate<=0)throw new Error('Invalid exchange rate');
+      by('ChinaRate').value=rate.toFixed(4);
+      const stamp=d?.date?String(d.date):new Date().toLocaleDateString('en-PH',{timeZone:'Asia/Manila'});
+      by('FxStatus').textContent='Auto rate: 1 CNY = ₱'+rate.toFixed(4)+' • '+stamp+' • editable';
+      refreshChinaCalc();
+    }catch(e){
+      by('FxStatus').textContent='Auto rate unavailable. Enter the actual CNY → PHP rate manually.';
+    }finally{
+      fxLoading=false;by('FxRefresh').disabled=false;by('FxRefresh').textContent='↻ Auto';
+    }
+  }
   function refreshChinaCalc(){
     const on=by('ChinaImport').checked,cost=Math.max(0,Number(by('CnyCost').value)||0),qty=Math.max(0,Number(by('ChinaQty').value)||0),rate=Math.max(0,Number(by('ChinaRate').value)||0);
     by('ChinaBox').style.display=on?'block':'none';
@@ -325,7 +345,7 @@ function productEditorModal(p){
     by('PhpUnit').value=phpUnit?money(phpUnit):'';
     by('ChinaCalc').innerHTML=on?'<div class="summaryRow"><span>Total CNY Purchase</span><strong>¥'+totalCny.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div><div class="summaryRow"><span>Converted PHP / Unit</span><strong>'+money(phpUnit)+'</strong></div><div class="summaryRow"><span>Total PHP Cost</span><strong>'+money(totalPhp)+'</strong></div><div class="summaryRow"><span>Suggested Cost +20%</span><strong>'+money(s20)+'</strong></div><div class="summaryRow totalLine"><span>Suggested Cost +50%</span><strong>'+money(s50)+'</strong></div>':'';
   }
-  by('ChinaImport').onchange=refreshChinaCalc;by('Cat').onchange=()=>{if(by('Cat').value==='China Imports'){by('ChinaImport').checked=true;refreshChinaCalc()}};by('CnyCost').oninput=refreshChinaCalc;by('ChinaQty').oninput=refreshChinaCalc;by('ChinaRate').oninput=refreshChinaCalc;refreshChinaCalc();
+  by('ChinaImport').onchange=()=>{refreshChinaCalc();if(by('ChinaImport').checked)fetchCnyPhpRate(false)};by('Cat').onchange=()=>{if(by('Cat').value==='China Imports'){by('ChinaImport').checked=true;refreshChinaCalc();fetchCnyPhpRate(false)}};by('FxRefresh').onclick=()=>fetchCnyPhpRate(true);by('CnyCost').oninput=refreshChinaCalc;by('ChinaQty').oninput=refreshChinaCalc;by('ChinaRate').oninput=()=>{by('FxStatus').textContent='Manual rate: 1 CNY = ₱'+(Number(by('ChinaRate').value)||0).toFixed(4);refreshChinaCalc()};refreshChinaCalc();if(by('ChinaImport').checked&&by('ChinaRate').value==='')fetchCnyPhpRate(false);
   by('Save').onclick=async()=>{
     if(!by('Name').value.trim()){by('Msg').textContent='Product name is required.';return}
     by('Save').disabled=true;by('Save').textContent=isEdit?'Saving…':'Adding…';
