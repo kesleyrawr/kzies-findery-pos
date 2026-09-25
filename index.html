@@ -320,6 +320,8 @@ function productEditorModal(p){
   document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
   const photo=attachProductPhotoEditor(prefix,p&&p.image_data||'');
   const by=id=>document.getElementById(prefix+id);
+  const clearProductMsg=()=>{if(by('Msg'))by('Msg').textContent=''};
+  by('Brand').addEventListener('input',clearProductMsg);by('Name').addEventListener('input',clearProductMsg);
   let fxLoading=false;
   async function fetchCnyPhpRate(force=false){
     if(fxLoading)return;
