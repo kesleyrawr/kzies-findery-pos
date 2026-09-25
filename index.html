@@ -371,9 +371,9 @@ function productEditorModal(p){
       by('Msg').textContent=res.data&&res.data.error||res.error&&res.error.message||'Unable to save product.';
       by('Save').disabled=false;by('Save').textContent=isEdit?'Save Product':'Add Product';return
     }
-    const newId=isEdit?p.id:Number(res.data.product_id);
-    const openStock=!isEdit&&document.getElementById('npOpenStock')&&document.getElementById('npOpenStock').checked;
-    m.remove();await products();scheduleAutoBackupSoon();toast(isEdit?'Product updated.':'Product added.');render();
+    const newId=isEdit?p.id:Number(res.data.product_id),reused=!isEdit&&!!res.data.reused_existing;
+    const openStock=!isEdit&&!reused&&document.getElementById('npOpenStock')&&document.getElementById('npOpenStock').checked;
+    m.remove();await products();scheduleAutoBackupSoon();toast(isEdit?'Product updated.':reused?'Existing product updated and reactivated.':'Product added.');render();
     if(openStock)setTimeout(()=>stockModal(newId),120);
   };
 }
