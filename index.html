@@ -961,6 +961,7 @@ function checkoutModal(){
   };
 
   const paymentExtras=()=>{const wallet=coPayment.value==='E-Wallet',needsRef=coPayment.value!=='Cash';ewalletBox.style.display=wallet?'block':'none';payRefWrap.style.display=needsRef?'block':'none';if(!needsRef)coPaymentRef.value=''};
+  coSalesChannel.onchange=()=>{if(coSalesChannel.value==='Walk-in')setWalkIn(true);calcCard()};
   coPayment.onchange=()=>{if(coPayment.value==='Credit Card'){coCoverage.value='Full';coCardAmount.value=''}paymentExtras();calcCard()};
   coCoverage.onchange=()=>{if(coCoverage.value==='Partial')coCardAmount.value='';calcCard()};
   coPricing.onchange=()=>{refreshPricing();const chosen=coCustomerChoice.value&&!['','__walkin'].includes(coCustomerChoice.value)?S.customers.find(v=>String(v.id)===String(coCustomerChoice.value)):null;refreshPointsPreview(chosen||null);calcCard()};
