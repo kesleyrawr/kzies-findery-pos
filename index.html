@@ -987,7 +987,7 @@ function checkoutModal(){
       p_address_line:coAddress.value.trim(),p_barangay:coBarangay.value.trim(),p_city:coCity.value.trim(),
       p_province:coProvince.value.trim(),p_zip_code:coZip.value.trim(),p_payment_method:coPayment.value,
       p_delivery_fee:pay.delivery,p_credit_card_amount:pay.cardAmount,p_payment_reference:coPaymentRef.value.trim(),
-      p_pricing_mode:coPricing.value,p_sales_channel:coSalesChannel.value,p_items:S.cart.map(x=>({id:x.id,qty:x.qty,custom_price:coPricing.value==='No Markup'?null:checkoutPriceFor(x.id)}))
+      p_pricing_mode:coPricing.value,p_sales_channel:coSalesChannel.value,p_walkin:walkin,p_items:S.cart.map(x=>({id:x.id,qty:x.qty,custom_price:coPricing.value==='No Markup'?null:checkoutPriceFor(x.id)}))
     });
     if(error||!data?.ok){coMsg.textContent=data?.error||error?.message||'Unable to complete sale.';coSave.disabled=false;coSave.textContent='Complete Sale';return}
     S.cart=[];m.remove();
