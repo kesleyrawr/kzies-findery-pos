@@ -50,6 +50,7 @@
 @media(max-width:1050px){.grid{grid-template-columns:repeat(3,1fr)}.panel{grid-template-columns:1fr}.cart{order:-1}}@media(max-width:760px){.modalBg{padding:8px;place-items:center}.modal{width:100%;max-height:calc(100dvh - 16px);padding:16px;border-radius:14px}.modalHead{top:-16px;margin:-16px -16px 10px;padding:14px 16px 10px}.modalStickyAction{bottom:-16px;margin-bottom:-16px!important}.summaryRow{font-size:13px;align-items:flex-start}.summaryRow span{min-width:0}.summaryRow strong{white-space:normal;text-align:right}.paymentBox,.paySummary{padding:12px}.formGrid{grid-template-columns:1fr}.formGrid .full{grid-column:auto}.clock{min-width:0}.clock b{display:none}.pill{display:none}.side{position:fixed;bottom:0;left:0;right:0;top:auto;z-index:30;width:auto;height:auto;display:flex;overflow-x:auto;border-top:1px solid #334155;border-right:0;padding:6px}.nav{min-width:52px;justify-content:center}.nav span:last-child{display:none}.main{padding-bottom:82px}.grid{grid-template-columns:repeat(2,1fr)}.metricGrid{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div id="app"></div><script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import * as XLSX from 'https://esm.sh/xlsx@0.18.5';
 const SUPA='https://mffxrxjmznmchcametff.supabase.co',KEY='sb_publishable_ndVXcce6a8bOa_BXbH_GKQ_MIlK3g91',OWNER='kziesadmin',SHEET='https://docs.google.com/spreadsheets/u/1/d/17D0sMKGZoPiLS6tUEuSyVTzH2J552rJRXiIrMMUbXPY/edit?usp=drivesdk';
 const sb=createClient(SUPA,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}),app=document.getElementById('app');const TOKEN_KEY='kzies_pos_token';let S={profile:null,products:[],categorySettings:{},cart:[],sales:[],customers:[],refunds:[],warranties:[],events:[],supplierPurchases:[],supplierReceiptFiles:[],staffs:[],invites:[],actionPasswordInfo:null,finance:null,invoiceInfo:null,recordDate:null,tab:'POS',search:'',productCategory:'All Products',productStockFilter:'All',productSort:'name-asc',recentProductIds:[],calendarMonth:null,pages:{POS:1,Products:1,Sales:1,Reports:1,Quotation:1,Refunds:1,Warranties:1,Claims:1,Calendar:1,Customers:1,Accounts:1}};
 let backupDirectoryHandle=null,backupLastSaved=null,backupTimer=null,backupSoonTimer=null;
@@ -418,6 +419,113 @@ function categoryManagerModal(){
     scheduleAutoBackupSoon();toast(cat+' category '+(active?'activated':'hidden'));render();
   });
 }
+
+function bulkUploadProductsModal(){
+  if(S.profile?.app_role!=='Admin')return;
+  const categories=['China Imports','Japan Finds','Trading Cards','Keyboards','Mice','Headsets','Mouse Pads','Cooling & Fans','Thermal Paste','Accessories','Other'];
+  const tcgTypes=['Pokémon English','Pokémon Japanese','One Piece English','One Piece Japanese'];
+  const m=document.createElement('div');m.className='modalBg';
+  m.innerHTML='<div class="modal" style="width:min(980px,100%)"><div class="modalHead"><h2>Bulk Upload Products</h2><button class="close">×</button></div><div class="welcome">Upload the <b>Kzie’s Findery Bulk Product Upload Template (.xlsx)</b>. The file is validated first. Nothing is imported until you click <b>Import Products</b>.</div><div class="formGrid"><label class="full">Excel File<input id="bulkProductFile" type="file" accept=".xlsx,.xls"></label></div><div id="bulkProductSummary" class="financeNote" style="margin-top:12px">Choose a template file to preview.</div><div id="bulkProductPreview" class="light tableWrap" style="margin-top:12px;max-height:360px;overflow:auto"></div><p id="bulkProductMsg" class="error"></p><button id="bulkProductImport" class="primary wide modalStickyAction" disabled>Import Products</button></div>';
+  document.body.append(m);m.querySelector('.close').onclick=()=>m.remove();
+  let parsed=[];
+  const val=(r,k)=>r[k]??'';
+  const yes=v=>['yes','y','true','1','on'].includes(String(v||'').trim().toLowerCase());
+  const num=v=>String(v??'').trim()===''?null:Number(v);
+  const dateIso=v=>{
+    if(v==null||v==='')return null;
+    if(typeof v==='number'){
+      const d=XLSX.SSF.parse_date_code(v);
+      if(d)return String(d.y).padStart(4,'0')+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
+    }
+    const s=String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+    const d=new Date(s);return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+  };
+  function normalizeRows(rows){
+    return rows.filter(r=>Object.values(r).some(v=>String(v??'').trim()!=='')).map((r,idx)=>{
+      const product={
+        row:idx+2,
+        brand:String(val(r,'Brand')).trim(),
+        name:String(val(r,'Product Name *')||val(r,'Product Name')).trim(),
+        category:String(val(r,'Category *')||val(r,'Category')).trim(),
+        tradingCardType:String(val(r,'Trading Card Type')).trim(),
+        retail:num(val(r,'Retail Price')),
+        wholesale:num(val(r,'Wholesale Price')),
+        active:yes(val(r,'Active *')||val(r,'Active')),
+        warranty:String(val(r,'Warranty Status *')||val(r,'Warranty Status')).trim()||'Standard Warranty',
+        notes:String(val(r,'Notes')).trim(),
+        chinaImport:yes(val(r,'China Import *')||val(r,'China Import')),
+        chinaCostBasis:String(val(r,'China Cost Basis')).trim()||'Per Piece',
+        cnyCost:num(val(r,'CNY Cost')),
+        chinaQty:num(val(r,'China Qty Bought')),
+        chinaRate:num(val(r,'CNY to PHP Rate')),
+        unitsPerPack:num(val(r,'Units per Pack'))||1,
+        openingQty:num(val(r,'Opening Stock Qty'))||0,
+        supplier:String(val(r,'Supplier / Store')).trim(),
+        receiptNo:String(val(r,'Supplier Receipt / Invoice No.')).trim(),
+        purchaseDate:dateIso(val(r,'Purchase Date')),
+        supplierWarrantyUntil:dateIso(val(r,'Supplier Warranty Until')),
+        receiptNotes:String(val(r,'Receipt Notes')).trim(),
+        stockNotes:String(val(r,'Stock Notes')).trim(),
+        errors:[]
+      };
+      if(!product.name)product.errors.push('Product Name required');
+      if(!categories.includes(product.category))product.errors.push('Invalid Category');
+      if(product.category==='Trading Cards'&&!tcgTypes.includes(product.tradingCardType))product.errors.push('Trading Card Type required');
+      if(!['Standard Warranty','No Warranty'].includes(product.warranty))product.errors.push('Invalid Warranty Status');
+      if(product.chinaImport&&!['Per Piece','Pack / Bundle'].includes(product.chinaCostBasis))product.errors.push('Invalid China Cost Basis');
+      for(const [label,n] of [['Retail Price',product.retail],['Wholesale Price',product.wholesale],['CNY Cost',product.cnyCost],['China Qty Bought',product.chinaQty],['CNY Rate',product.chinaRate],['Units per Pack',product.unitsPerPack],['Opening Stock Qty',product.openingQty]]){
+        if(n!=null&&(!Number.isFinite(n)||n<0))product.errors.push(label+' must be 0 or higher');
+      }
+      if(product.openingQty>0&&(product.wholesale==null||product.wholesale<0))product.errors.push('Wholesale Price required for opening stock');
+      if(product.purchaseDate&&product.supplierWarrantyUntil&&product.supplierWarrantyUntil<product.purchaseDate)product.errors.push('Supplier Warranty Until is before Purchase Date');
+      return product;
+    });
+  }
+  function draw(){
+    const bad=parsed.filter(x=>x.errors.length),good=parsed.length-bad.length;
+    bulkProductSummary.innerHTML='<b>'+parsed.length+' rows found</b> • <span class="active">'+good+' ready</span> • <span class="'+(bad.length?'warrantyExpired':'active')+'">'+bad.length+' with errors</span><br><span class="hint">Photos are not imported. Existing matching products may be reused/reactivated by the POS product function.</span>';
+    bulkProductPreview.innerHTML=parsed.length?'<table class="tbl"><thead><tr><th>Row</th><th>Product</th><th>Category</th><th>Wholesale</th><th>Retail</th><th>Opening Qty</th><th>Status</th></tr></thead><tbody>'+parsed.map(x=>'<tr><td>'+x.row+'</td><td><b>'+esc(x.name||'—')+'</b><div class="hint">'+esc(x.brand||'')+'</div></td><td>'+esc(x.category||'—')+(x.tradingCardType?'<div class="hint">'+esc(x.tradingCardType)+'</div>':'')+'</td><td>'+(x.wholesale==null?'—':money(x.wholesale))+'</td><td>'+(x.retail==null?'—':money(x.retail))+'</td><td>'+x.openingQty+'</td><td>'+(x.errors.length?'<span class="warrantyExpired">'+esc(x.errors.join('; '))+'</span>':'<span class="active">Ready</span>')+'</td></tr>').join('')+'</tbody></table>':'';
+    bulkProductImport.disabled=!parsed.length||bad.length>0;
+  }
+  bulkProductFile.onchange=async()=>{
+    bulkProductMsg.textContent='';parsed=[];bulkProductImport.disabled=true;
+    const file=bulkProductFile.files?.[0];if(!file){draw();return}
+    try{
+      const buf=await file.arrayBuffer(),book=XLSX.read(buf,{type:'array',cellDates:false}),ws=book.Sheets['Products Upload']||book.Sheets[book.SheetNames[0]];
+      if(!ws)throw new Error('No worksheet found.');
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+      parsed=normalizeRows(rows);
+      draw();
+    }catch(e){bulkProductMsg.textContent=e.message||'Unable to read Excel file.'}
+  };
+  bulkProductImport.onclick=async()=>{
+    if(!parsed.length||parsed.some(x=>x.errors.length))return;
+    bulkProductImport.disabled=true;bulkProductImport.textContent='Importing…';bulkProductMsg.textContent='';
+    const tok=localStorage.getItem(TOKEN_KEY)||'';let imported=0,stockOpened=0,failed=[];
+    for(const p of parsed){
+      try{
+        const args={p_token:tok,p_brand:p.brand,p_name:p.name,p_retail:p.retail,p_wholesale:p.wholesale,p_notes:p.notes,p_category:p.category,p_image_data:null,p_china_import:p.chinaImport,p_china_cny_unit_cost:p.chinaImport?p.cnyCost:null,p_china_qty_bought:p.chinaImport&&p.chinaQty!=null?Math.round(p.chinaQty):null,p_china_exchange_rate:p.chinaImport?p.chinaRate:null,p_is_active:p.active,p_china_cost_basis:p.chinaImport?p.chinaCostBasis:'Per Piece',p_china_units_per_pack:p.chinaImport&&p.chinaCostBasis==='Pack / Bundle'?Math.max(1,Math.round(p.unitsPerPack||1)):1,p_warranty_status:p.warranty,p_trading_card_type:p.category==='Trading Cards'?p.tradingCardType:null};
+        const res=await sb.rpc('kzies_create_product_local',args);
+        if(res.error||!res.data?.ok)throw new Error(res.data?.error||res.error?.message||'Product create failed');
+        const productId=Number(res.data.product_id);imported++;
+        if(p.openingQty>0&&!res.data.reused_existing){
+          const st=await sb.rpc('kzies_stock_change_with_sale_price_local',{p_token:tok,p_product_id:productId,p_action:'OPENING',p_quantity:Math.round(p.openingQty),p_unit_cost:Number(p.wholesale||0),p_notes:p.stockNotes||'Bulk upload opening stock',p_supplier_name:p.supplier,p_receipt_number:p.receiptNo,p_purchase_date:p.purchaseDate,p_supplier_warranty_until:p.supplierWarrantyUntil,p_receipt_notes:p.receiptNotes,p_out_price_mode:'Selling'});
+          if(st.error||!st.data?.ok)throw new Error(st.data?.error||st.error?.message||'Product saved, but opening stock failed');
+          stockOpened++;
+        }
+      }catch(e){failed.push('Row '+p.row+' ('+p.name+'): '+(e.message||'Import failed'))}
+    }
+    await Promise.all([products(),loadSupplierPurchases()]);scheduleAutoBackupSoon();
+    if(failed.length){
+      bulkProductMsg.innerHTML='<b>'+imported+' products processed.</b> '+stockOpened+' opening stock records saved.<br>'+failed.map(x=>esc(x)).join('<br>');
+      bulkProductImport.disabled=false;bulkProductImport.textContent='Retry Import';
+    }else{
+      toast(imported+' products imported • '+stockOpened+' opening stock records');
+      m.remove();render();
+    }
+  };
+}
 function addProductModal(){productEditorModal(null)}
 function editProductModal(id){const p=S.products.find(x=>Number(x.id)===Number(id));if(p)productEditorModal(p)}
 async function toggleStockTracking(id,enabled,input){
@@ -765,7 +873,7 @@ function render(){const c=document.getElementById('content'),t=S.tab;if(!c)retur
   base=sortProducts(base.filter(stockFilterPass));
   const list=pageSlice(base,'Products');
   const totalQty=S.products.filter(p=>p.stock_initialized).reduce((a,p)=>a+p.stock_qty,0),stockValue=S.products.reduce((a,p)=>a+(p.stock_initialized?Number(p.wholesale||0)*Number(p.stock_qty||0):0),0),outCount=S.products.filter(p=>p.stock_tracked&&p.stock_qty===0).length,lowCount=S.products.filter(p=>p.stock_tracked&&p.stock_qty>0&&p.stock_qty<=5).length;
-  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Products & Inventory</h2><div class="hint">Spreadsheet view • photos • stock quantity • incoming/outgoing • price sorting</div></div>'+(S.profile?.app_role==='Admin'?'<div class="actionRow"><button id="manageCategoriesBtn" class="secondary">Manage Categories</button><button id="addProductBtn" class="primary">+ Add Product</button></div>':'')+'</div>'+
+  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Products & Inventory</h2><div class="hint">Spreadsheet view • photos • stock quantity • incoming/outgoing • price sorting</div></div>'+(S.profile?.app_role==='Admin'?'<div class="actionRow"><button id="manageCategoriesBtn" class="secondary">Manage Categories</button><button id="bulkUploadBtn" class="secondary">📥 Bulk Upload Products</button><button id="addProductBtn" class="primary">+ Add Product</button></div>':'')+'</div>'+
   '<div class="stockSummary"><div class="metric">Units on Hand<b>'+totalQty+'</b></div><div class="metric">Inventory Value<b>'+money(stockValue)+'</b></div><div class="metric">Low Stock<b>'+lowCount+'</b></div><div class="metric">Out of Stock<b>'+outCount+'</b></div></div>'+
   '<div class="stockHelp"><b>Stock Tracking:</b> Use the ON/OFF switch in the Status column. ON enforces the saved quantity during checkout. OFF keeps your qty, history, receipts, and capital records but stops quantity blocking. Incoming stock still connects to Capital & Income.</div>'+
   '<input id="q" class="search" value="'+esc(S.search)+'" placeholder="Search product, brand…">'+
@@ -776,7 +884,7 @@ function render(){const c=document.getElementById('content'),t=S.tab;if(!c)retur
   q.oninput=e=>{S.search=e.target.value;S.pages.Products=1;clearTimeout(window.__kzieSearchTimer);window.__kzieSearchTimer=setTimeout(()=>{render();requestAnimationFrame(()=>{const nq=document.getElementById('q');if(nq){nq.focus();const p=nq.value.length;try{nq.setSelectionRange(p,p)}catch{}}})},350)};
   stockFilter.onchange=()=>{S.productStockFilter=stockFilter.value;S.pages.Products=1;render()};
   productSort.onchange=()=>{S.productSort=productSort.value;S.pages.Products=1;render()};
-  if(document.getElementById('addProductBtn'))addProductBtn.onclick=addProductModal;if(document.getElementById('manageCategoriesBtn'))manageCategoriesBtn.onclick=categoryManagerModal;bindAdd();bindProductAdminActions();bindProductPhotos();bindPager();return}
+  if(document.getElementById('addProductBtn'))addProductBtn.onclick=addProductModal;if(document.getElementById('manageCategoriesBtn'))manageCategoriesBtn.onclick=categoryManagerModal;if(document.getElementById('bulkUploadBtn'))bulkUploadBtn.onclick=bulkUploadProductsModal;bindAdd();bindProductAdminActions();bindProductPhotos();bindPager();return}
 if(t==='Quotation'){const total=S.cart.reduce((a,p)=>a+p.selling*p.qty,0),list=pageSlice(S.cart,'Quotation');c.innerHTML=`<h2>Quotation</h2><div class="light" style="padding:18px">${S.cart.length?list.map(x=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee"><span>${x.qty} × ${esc(x.name)}</span><b>${money(x.qty*x.selling)}</b></div>`).join(''):'No products in quotation.'}${S.cart.length?`<div class="total"><span>Total</span><span>${money(total)}</span></div><div class="actionRow" style="margin-top:12px"><button onclick="window.print()" class="primary">Print quotation</button><button id="quoteFollowup" class="secondary">Schedule Follow-up</button></div>`:''}</div>${pager(S.cart,'Quotation')}`;bindPager();if(document.getElementById('quoteFollowup'))quoteFollowup.onclick=()=>eventModal(null,{items:S.cart.map(x=>({id:x.id,name:x.name,qty:x.qty,selling:x.selling})),total});return}if(t==='Sales'||t==='Reports'){const datedSales=S.sales.filter(s=>recordDateKey(s.created_at)===recordDateValue()),g=datedSales.reduce((a,s)=>a+s.total,0),w=datedSales.reduce((a,s)=>a+s.wholesale_total,0),i=datedSales.reduce((a,s)=>a+s.income,0),list=pageSlice(datedSales,t);c.innerHTML=`<h2>${t}</h2>${t==='Reports'?`<div class="metricGrid"><div class="metric">Sales<b>${datedSales.length}</b></div><div class="metric">Revenue<b>${money(g)}</b></div><div class="metric">Wholesale<b>${money(w)}</b></div><div class="metric">Income<b>${money(i)}</b></div></div>`:''}<div class="light tableWrap"><table class="tbl"><thead><tr><th>Invoice</th><th>Customer</th><th>Contact</th><th>Channel</th><th>Qty / Items</th><th>Payment</th><th>Date/Time</th><th>Subtotal</th><th>Delivery</th><th>CC Fee (3%)</th><th>Total</th><th>Income</th><th>Points</th><th>Actions</th></tr></thead><tbody>${list.length?list.map(x=>`<tr><td><b>${esc(invoiceNumber(x))}</b><div class="hint">Sale #${x.id}</div></td><td>${esc(x.customer_name)}</td><td>${esc(x.contact_number)}</td><td><b>${esc(x.sales_channel||'Walk-in')}</b></td><td>${(()=>{const items=saleItems(x),qty=items.reduce((a,it)=>a+Number(it.qty||1),0);return '<b>'+qty+' items</b><div class="hint">'+items.length+' product'+(items.length===1?'':'s')+'</div>'})()}</td><td>${esc(x.payment_method)}${x.pricing_mode==='No Markup'?`<div class="pointsBadge" style="margin-top:4px">No Markup</div>`:''}${x.payment_reference?`<div class="hint">Ref: ${esc(x.payment_reference)}</div>`:''}${x.payment_method==='Credit Card'? `<div class="hint">CC: ${money(x.credit_card_amount)}${x.non_card_amount>0?`<br>No 3%: ${money(x.non_card_amount)}`:''}</div>` : ''}</td><td>${new Date(x.created_at).toLocaleString('en-PH',{timeZone:'Asia/Manila'})}</td><td>${money(x.subtotal)}</td><td>${money(x.delivery_fee)}</td><td>${money(x.payment_fee)}</td><td><b>${money(x.total)}</b></td><td>${money(x.income)}</td><td><span class="pointsBadge">⭐ ${Number(x.points_earned||0)} pts</span></td><td><div class="actionRow"><button class="secondary miniBtn" data-invoice-sale="${x.id}">Invoice</button><button class="secondary miniBtn" data-refund-sale="${x.id}">Refund</button><button class="secondary miniBtn" data-warranty-sale="${x.id}">Warranty</button>${S.profile?.app_role==='Admin'?'<button class="secondary miniBtn" data-edit-sale="'+x.id+'">Edit</button>':''}<button class="danger miniBtn" data-delete-sale="${x.id}">${S.profile?.app_role==='Admin'?'Delete':'Delete 🔒'}</button></div></td></tr>`).join(''):'<tr><td colspan="14" class="empty">No completed sales yet.</td></tr>'}</tbody></table></div>${pager(datedSales,t)}`;bindPager();bindSaleActions();return}if(t==='Refund & Warranty'||t==='Refunds'||t==='Warranties'){claimsView(c);return}if(t==='Calendar'){calendarView(c);return}if(t==='Customers'){
   const allCustomers=S.customers,list=pageSlice(allCustomers,'Customers'),
         totalPts=allCustomers.reduce((a,x)=>a+Number(x.loyalty_points||0),0),
