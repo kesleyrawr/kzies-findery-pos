@@ -1397,22 +1397,57 @@ const FB_DEFAULTS=[
  ['Order Completed','Hi {name}! Your order is marked completed. Thank you for shopping at Kzie’s Findery!']
 ];
 const fbKey=(kind)=>'kzies_fb_'+kind+'_v1_'+String(S.profile?.id||S.profile?.username||'device');
-const fbRead=(kind,fallback)=>{try{const v=JSON.parse(localStorage.getItem(fbKey(kind)));return Array.isArray(v)?v:fallback}catch{return fallback}};
-const fbWrite=(kind,v)=>{try{localStorage.setItem(fbKey(kind),JSON.stringify(v));return true}catch{toast('Storage full or blocked. Please export your records.');return false}};
+const FB_CLOUD={orders:[],templates:[],loaded:false};
+const fbRead=(kind,fallback)=>FB_CLOUD.loaded?(FB_CLOUD[kind]||fallback):fallback;
+async function fbCall(kind,action='list',id=null,payload=null){
+ const token=localStorage.getItem(TOKEN_KEY)||'';
+ const {data,error}=await sb.rpc('kzies_fb_data_local',{p_token:token,p_kind:kind,p_action:action,p_id:id,p_payload:payload});
+ if(error||!data?.ok)throw Error(data?.error||error?.message||'Unable to save online');
+ return data;
+}
+async function fbCloudLoad(){
+ const [orders,templates]=await Promise.all([fbCall('orders'),fbCall('templates')]);
+ FB_CLOUD.orders=orders.items||[]; FB_CLOUD.templates=templates.items?.length?templates.items:FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body}));
+ // Import device-only entries once, without overwriting existing cloud records
+ for(const kind of ['orders','templates']){
+  let local=[];
+  try{local=JSON.parse(localStorage.getItem(fbKey(kind))||'[]')}catch{}
+  const existing=new Set(FB_CLOUD[kind].map(x=>x.id));
+  for(let i=0;i<local.length;i++){
+   const x={...local[i],id:local[i].id||(kind==='templates'?'template-'+i:null)};
+   if(x.id&&!existing.has(x.id)){await fbCall(kind,'upsert',x.id,x);FB_CLOUD[kind].push(x);existing.add(x.id)}
+  }
+ }
+ FB_CLOUD.loaded=true;
+}
+async function fbEnsureLoaded(){
+ if(FB_CLOUD.loaded)return true;
+ try{await fbCloudLoad();return true}catch(e){toast(e.message||'Unable to load Facebook Orders');return false}
+}
+
+const fbWrite=async(kind,v,id,action='upsert')=>{
+ try{
+  await fbCall(kind,action,id,action==='upsert'?v:null);
+  if(kind==='orders')FB_CLOUD.orders=action==='delete'?FB_CLOUD.orders.filter(x=>x.id!==id):[v,...FB_CLOUD.orders.filter(x=>x.id!==id)];
+  else FB_CLOUD.templates=FB_CLOUD.templates.map(x=>x.id===id?v:x);
+  return true;
+ }catch(e){toast('Not saved: '+(e.message||e));return false}
+};
 const fbText=x=>esc(String(x??''));
 const fbCash=x=>'₱'+Number(x||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fbTotal=x=>Number(x.amount||0)+Number(x.fee||0);
 const fbDefaults=()=>Object.fromEntries(FB_FIELDS.map(x=>[x[0],x[0]==='paid'?'Unpaid':x[0]==='status'?'Pending':x[0]==='fulfillment'?'Delivery':x[0]==='shipping'?'Not Selected':x[0]==='orderDate'?new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}):'']));
-function fbRender(c){
+async function fbRender(c){
+  if(!await fbEnsureLoaded()){c.innerHTML='<div class="light" style="padding:20px">Could not load online Facebook Orders. Check connection, then reopen this section.</div>';return}
   const isOrders=S.fbSub!=='Templates',data=fbRead('orders',[]);
-  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Facebook Orders · '+(isOrders?'Customers':'Templates')+'</h2><div class="fbSmall">Separate from POS loyalty customers. Facebook records are saved on this browser only, not yet synced between devices. Export backups regularly.</div></div></div>'+
+  c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Facebook Orders · '+(isOrders?'Customers':'Templates')+'</h2><div class="fbSmall">Separate from POS loyalty customers. Records sync securely through Supabase for authorized POS accounts. Export backups regularly.</div></div></div>'+
   (isOrders?'<div class="fbToolbar"><button class="primary" id="fbAdd">+ Add Order</button><button class="secondary" id="fbExport">Export CSV</button><input id="fbSearch" placeholder="Search customer, order, tracking..." value="'+fbText(S.fbSearch)+'"><select id="fbFilter">'+['All','Pending','Processing','Ready for Pickup','Shipped','Delivered','Completed','Cancelled','Unpaid','Partial','Paid'].map(x=>'<option '+(S.fbFilter===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div class="fbSheet"><table><thead><tr>'+['Order Date','Order ID','Customer Name','Address','Contact Number','Full Order Details','Other Info','Payment Method','Product Amount','Paid / Not','Amount Paid','Shipping','Tracking Number / Link','Shipping Fee','Pickup / Delivery','Status','Total','Balance','Actions'].map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody id="fbRows"></tbody></table></div><div class="fbToolbar" id="fbPager"></div>':'<div class="fbToolbar"><button class="secondary" id="fbResetTemplates">Restore Default Templates</button></div><div class="fbTemplates" id="fbTemplateGrid"></div>');
   if(!isOrders){
-    const t=fbRead('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));
+    const t=fbRead('templates',FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body})));
     document.getElementById('fbTemplateGrid').innerHTML=t.map((x,i)=>'<article class="fbTemplate"><input aria-label="Template name" data-fb-title="'+i+'" value="'+fbText(x.title)+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:7px"><textarea data-fb-body="'+i+'" aria-label="Template message">'+fbText(x.body)+'</textarea><div class="fbActions"><button class="primary" data-fb-copy="'+i+'">Copy Message</button><button class="secondary" data-fb-save="'+i+'">Save Template</button></div></article>').join('');
-    document.querySelectorAll('[data-fb-save]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.fbSave),arr=fbRead('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));arr[i]={title:document.querySelector('[data-fb-title="'+i+'"]').value,body:document.querySelector('[data-fb-body="'+i+'"]').value};if(fbWrite('templates',arr))toast('Template saved')});
+    document.querySelectorAll('[data-fb-save]').forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.fbSave),arr=fbRead('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));arr[i]={title:document.querySelector('[data-fb-title="'+i+'"]').value,body:document.querySelector('[data-fb-body="'+i+'"]').value};if(await fbWrite('templates',arr[i],arr[i].id))toast('Template saved online')});
     document.querySelectorAll('[data-fb-copy]').forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.fbCopy),v=document.querySelector('[data-fb-body="'+i+'"]').value;try{await navigator.clipboard.writeText(v);toast('Copied!')}catch{toast('Copy unavailable in this browser')}});
-    document.getElementById('fbResetTemplates').onclick=()=>{if(confirm('Restore all default templates?')){fbWrite('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));fbRender(c)}};
+    document.getElementById('fbResetTemplates').onclick=async()=>{if(confirm('Restore all default templates?')){for(let i=0;i<FB_DEFAULTS.length;i++){const [title,body]=FB_DEFAULTS[i];await fbWrite('templates',{id:'template-'+i,title,body},'template-'+i)}fbRender(c)}};
     return;
   }
   const search=(S.fbSearch||'').toLowerCase(),filtered=data.filter(x=>(!search||[x.name,x.contact,x.details,x.tracking,x.address,x.id].join(' ').toLowerCase().includes(search))&&(S.fbFilter==='All'||x.status===S.fbFilter||x.paid===S.fbFilter)).sort((a,b)=>String(b.orderDate||'').localeCompare(String(a.orderDate||''))||String(b.created||'').localeCompare(String(a.created||'')));
@@ -1425,7 +1460,7 @@ function fbRender(c){
   document.getElementById('fbSearch').oninput=e=>{S.fbSearch=e.target.value;S.fbPage=1;fbRender(c);document.getElementById('fbSearch')?.focus()};
   document.getElementById('fbFilter').onchange=e=>{S.fbFilter=e.target.value;S.fbPage=1;fbRender(c)};
   document.querySelectorAll('[data-fb-edit]').forEach(b=>b.onclick=()=>fbEdit(b.dataset.fbEdit));
-  document.querySelectorAll('[data-fb-del]').forEach(b=>b.onclick=()=>{if(!confirm('Permanently delete this Facebook order?'))return;const a=fbRead('orders',[]).filter(x=>x.id!==b.dataset.fbDel);if(fbWrite('orders',a))fbRender(c)});
+  document.querySelectorAll('[data-fb-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Permanently delete this Facebook order?'))return;if(await fbWrite('orders',null,b.dataset.fbDel,'delete'))fbRender(c)});
   document.getElementById('fbExport').onclick=()=>fbExport(data);
 }
 function fbEdit(id){
@@ -1434,12 +1469,12 @@ function fbEdit(id){
  layer.innerHTML='<div class="fbDialog" role="dialog" aria-modal="true"><h2 style="margin:0 0 12px">'+(id?'Edit Facebook Order':'Add Facebook Order')+'</h2><form id="fbOrderForm"><div class="fbFields">'+FB_FIELDS.map(([key,title,type,opts])=>'<label class="'+(['address','details','other'].includes(key)?'fbWide':'')+'">'+title+(type==='select'?'<select name="'+key+'">'+opts.map(v=>'<option '+(x[key]===v?'selected':'')+'>'+fbText(v)+'</option>').join('')+'</select>':type==='textarea'?'<textarea name="'+key+'" rows="3">'+fbText(x[key])+'</textarea>':'<input name="'+key+'" type="'+type+'" '+(type==='number'?'min="0" step="0.01"':'')+' value="'+fbText(x[key])+'" '+(key==='name'?'required':'')+'>')+'</label>').join('')+'</div><div class="fbActions"><button class="primary" type="submit">Save Order</button><button class="secondary" type="button" id="fbCancel">Cancel</button></div></form></div>';
  document.body.append(layer);layer.querySelector('#fbCancel').onclick=()=>layer.remove();
  layer.addEventListener('click',e=>{if(e.target===layer)layer.remove()});
- layer.querySelector('form').onsubmit=e=>{
+ layer.querySelector('form').onsubmit=async e=>{
   e.preventDefault();const fd=new FormData(e.target),v=Object.fromEntries(FB_FIELDS.map(([key])=>[key,String(fd.get(key)||'').trim()]));
   if(!v.name){toast('Customer name is required');return}
   for(const n of ['amount','fee','paidAmount']){v[n]=Number(v[n]||0);if(!Number.isFinite(v[n])||v[n]<0){toast('Amount fields must be zero or greater');return}}
   v.id=id||('FB-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase());v.created=existing?.created||new Date().toISOString();
-  const a=id?data.map(o=>o.id===id?v:o):[v,...data];if(fbWrite('orders',a)){layer.remove();fbRender(document.getElementById('content'));toast('Facebook order saved on this device')}
+  if(await fbWrite('orders',v,v.id)){layer.remove();fbRender(document.getElementById('content'));toast('Facebook order saved online')}
  };
 }
 function fbExport(data){
