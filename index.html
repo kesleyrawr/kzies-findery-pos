@@ -1381,7 +1381,8 @@ async function start(){if(location.pathname==='/register'){registerView();return
 const FB_FIELDS=[
  ['name','Customer Name','text'],['address','Address','textarea'],['contact','Contact Number','text'],
  ['details','Full Order Details','textarea'],
- ['payment','Mode of Payment','select',['GCash','Maya','Bank Transfer','Cash','Other']],
+ ['payment','Payment Method','select',['GCash','Maya','Bank Transfer','Cash','COD','Shopee Checkout','Other']],
+ ['arrangement','Payment Arrangement','select',['Full Payment','Partial Payment','COD','Pending Payment']],
  ['amount','Product Amount (PHP)','number'],
  ['shipping','Shipping Provider','select',['Not Selected','Lalamove','Shopee Checkout','Flash Express','JNT','Others']],
  ['tracking','Tracking Number / Link','text'],['fee','Shipping Fee (PHP)','number'],
@@ -1437,13 +1438,15 @@ const fbWrite=async(kind,v,id,action='upsert')=>{
 };
 const fbText=x=>esc(String(x??''));
 const fbCash=x=>'₱'+Number(x||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fbTotal=x=>Number(x.amount||0)+Number(x.fee||0);
-const fbDefaults=()=>Object.fromEntries(FB_FIELDS.map(x=>[x[0],x[0]==='status'?'Pending':x[0]==='fulfillment'?'Delivery':x[0]==='shipping'?'Not Selected':x[0]==='orderDate'?new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}):'']));
+const fbChargeFee=x=>(x.fulfillment==='Pickup'||x.shipping==='Shopee Checkout')?0:Number(x.fee||0);
+const fbTotal=x=>Number(x.amount||0)+fbChargeFee(x);
+const fbBalance=x=>Math.max(0,fbTotal(x)-Number(x.paidAmount||0));
+const fbDefaults=()=>Object.fromEntries(FB_FIELDS.map(x=>[x[0],x[0]==='status'?'Pending':x[0]==='arrangement'?'Pending Payment':x[0]==='fulfillment'?'Delivery':x[0]==='shipping'?'Not Selected':x[0]==='orderDate'?new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}):'']));
 async function fbRender(c){
   if(!await fbEnsureLoaded()){c.innerHTML='<div class="light" style="padding:20px">Could not load online Facebook Orders. Check connection, then reopen this section.</div>';return}
   const isOrders=S.fbSub!=='Templates',data=fbRead('orders',[]);
   c.innerHTML='<div class="sectionTitle"><div><h2 style="margin:0">Facebook Orders · '+(isOrders?'Customers':'Templates')+'</h2><div class="fbSmall">Separate from POS loyalty customers. Records sync securely through Supabase for authorized POS accounts. Export backups regularly.</div></div></div>'+
-  (isOrders?'<div class="fbToolbar"><button class="primary" id="fbAdd">+ Add Order</button><button class="secondary" id="fbExport">Export CSV</button><input id="fbSearch" placeholder="Search customer, order, tracking..." value="'+fbText(S.fbSearch)+'"><select id="fbFilter">'+['All','Pending','Processing','Ready for Pickup','Shipped','Delivered','Completed','Cancelled'].map(x=>'<option '+(S.fbFilter===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div class="fbSheet"><table><thead><tr>'+['Order Date','Order ID','Customer Name','Address','Contact Number','Full Order Details','Payment Method','Product Amount','Amount Paid','Shipping','Tracking Number / Link','Shipping Fee','Pickup / Delivery','Status / Done','Total','Balance','Actions'].map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody id="fbRows"></tbody></table></div><div class="fbToolbar" id="fbPager"></div>':'<div class="fbToolbar"><button class="secondary" id="fbResetTemplates">Restore Default Templates</button></div><div class="fbTemplates" id="fbTemplateGrid"></div>');
+  (isOrders?'<div class="fbToolbar"><button class="primary" id="fbAdd">+ Add Order</button><button class="secondary" id="fbExport">Export CSV</button><input id="fbSearch" placeholder="Search customer, order, tracking..." value="'+fbText(S.fbSearch)+'"><select id="fbFilter">'+['All','Pending','Processing','Ready for Pickup','Shipped','Delivered','Completed','Cancelled'].map(x=>'<option '+(S.fbFilter===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div class="fbSheet"><table><thead><tr>'+['Order Info','Customer','Order Details','Product Amount','Delivery Details','Total','Amount Paid','Balance','Payment','Status / Done','Actions'].map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody id="fbRows"></tbody></table></div><div class="fbToolbar" id="fbPager"></div>':'<div class="fbToolbar"><button class="secondary" id="fbResetTemplates">Restore Default Templates</button></div><div class="fbTemplates" id="fbTemplateGrid"></div>');
   if(!isOrders){
     const t=fbRead('templates',FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body})));
     document.getElementById('fbTemplateGrid').innerHTML=t.map((x,i)=>'<article class="fbTemplate"><input aria-label="Template name" data-fb-title="'+i+'" value="'+fbText(x.title)+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:7px"><textarea data-fb-body="'+i+'" aria-label="Template message">'+fbText(x.body)+'</textarea><div class="fbActions"><button class="primary" data-fb-copy="'+i+'">Copy Message</button><button class="secondary" data-fb-save="'+i+'">Save Template</button></div></article>').join('');
@@ -1455,7 +1458,7 @@ async function fbRender(c){
   const search=(S.fbSearch||'').toLowerCase(),filtered=data.filter(x=>(!search||[x.name,x.contact,x.details,x.tracking,x.address,x.id].join(' ').toLowerCase().includes(search))&&(S.fbFilter==='All'||x.status===S.fbFilter)).sort((a,b)=>String(b.orderDate||'').localeCompare(String(a.orderDate||''))||String(b.created||'').localeCompare(String(a.created||'')));
   const max=Math.max(1,Math.ceil(filtered.length/10));S.fbPage=Math.min(max,Math.max(1,S.fbPage||1));
   const current=filtered.slice((S.fbPage-1)*10,S.fbPage*10);
-  document.getElementById('fbRows').innerHTML=current.length?current.map(x=>'<tr class="'+(x.status==='Completed'?'fbDoneRow':'')+'"><td>'+fbText(x.orderDate)+'</td><td>'+fbText(x.id)+'</td><td><b>'+fbText(x.name)+'</b></td><td>'+fbText(x.address)+'</td><td>'+fbText(x.contact)+'</td><td>'+fbText(x.details)+'</td><td>'+fbText(x.payment)+'</td><td>'+fbCash(x.amount)+'</td><td>'+fbCash(x.paidAmount)+'</td><td>'+fbText(x.shipping)+'</td><td>'+fbText(x.tracking)+'</td><td>'+fbCash(x.fee)+'</td><td>'+fbText(x.fulfillment)+'</td><td class="fbDoneCell"><label style="display:flex;align-items:center;gap:7px;justify-content:center;white-space:nowrap"><input class="fbDoneCheck" type="checkbox" data-fb-done="'+fbText(x.id)+'" aria-label="Mark order completed" '+(x.status==='Completed'?'checked':'')+'><span class="fbTag">'+fbText(x.status)+'</span></label></td><td>'+fbCash(fbTotal(x))+'</td><td>'+fbCash(Math.max(0,fbTotal(x)-Number(x.paidAmount||0)))+'</td><td><button class="secondary miniBtn" data-fb-edit="'+fbText(x.id)+'">Edit</button> <button class="danger miniBtn" data-fb-del="'+fbText(x.id)+'">Delete</button></td></tr>').join(''):'<tr><td colspan="17">No Facebook orders found.</td></tr>';
+  document.getElementById('fbRows').innerHTML=current.length?current.map(x=>'<tr class="'+(x.status==='Completed'?'fbDoneRow':'')+'"><td>'+fbText(x.orderDate)+'<div class="fbSmall">'+fbText(x.id)+'</div></td><td><b>'+fbText(x.name)+'</b><div>'+fbText(x.contact)+'</div><div class="fbSmall">'+fbText(x.address)+'</div></td><td>'+fbText(x.details)+'</td><td>'+fbCash(x.amount)+'</td><td>'+fbText(x.fulfillment)+' · '+fbText(x.shipping)+'<div class="fbSmall">'+fbText(x.tracking)+'</div><div class="fbSmall">Shipping: '+(x.shipping==='Shopee Checkout'?'In app':fbCash(fbChargeFee(x)))+'</div></td><td><b>'+fbCash(fbTotal(x))+'</b></td><td>'+fbCash(x.paidAmount)+'</td><td>'+fbCash(fbBalance(x))+'</td><td>'+fbText(x.payment)+'<div class="fbSmall">'+fbText(x.arrangement||'')+'</div></td><td class="fbDoneCell"><label style="display:flex;align-items:center;gap:7px;justify-content:center;white-space:nowrap"><input class="fbDoneCheck" type="checkbox" data-fb-done="'+fbText(x.id)+'" aria-label="Mark order completed" '+(x.status==='Completed'?'checked':'')+'><span class="fbTag">'+fbText(x.status)+'</span></label></td><td><button class="secondary miniBtn" data-fb-edit="'+fbText(x.id)+'">Edit</button> <button class="danger miniBtn" data-fb-del="'+fbText(x.id)+'">Delete</button></td></tr>').join(''):'<tr><td colspan="11">No Facebook orders found.</td></tr>';
   document.getElementById('fbPager').innerHTML='<span class="fbSmall">'+filtered.length+' orders · Page '+S.fbPage+' of '+max+'</span><button class="secondary" id="fbPrev" '+(S.fbPage===1?'disabled':'')+'>Previous</button><button class="secondary" id="fbNext" '+(S.fbPage===max?'disabled':'')+'>Next</button>';
   document.getElementById('fbPrev').onclick=()=>{S.fbPage--;fbRender(c)};document.getElementById('fbNext').onclick=()=>{S.fbPage++;fbRender(c)};
   document.getElementById('fbAdd').onclick=()=>fbEdit(null);
@@ -1477,20 +1480,38 @@ async function fbRender(c){
 function fbEdit(id){
  const data=fbRead('orders',[]),existing=data.find(x=>x.id===id),x={...fbDefaults(),...(existing||{})};
  const layer=document.createElement('div');layer.className='fbModal';
- layer.innerHTML='<div class="fbDialog" role="dialog" aria-modal="true"><h2 style="margin:0 0 12px">'+(id?'Edit Facebook Order':'Add Facebook Order')+'</h2><form id="fbOrderForm"><div class="fbFields">'+FB_FIELDS.map(([key,title,type,opts])=>'<label class="'+(['address','details','other'].includes(key)?'fbWide':'')+'">'+title+(type==='select'?'<select name="'+key+'">'+opts.map(v=>'<option '+(x[key]===v?'selected':'')+'>'+fbText(v)+'</option>').join('')+'</select>':type==='textarea'?'<textarea name="'+key+'" rows="3">'+fbText(x[key])+'</textarea>':'<input name="'+key+'" type="'+type+'" '+(type==='number'?'min="0" step="0.01"':'')+' value="'+fbText(x[key])+'" '+(key==='name'?'required':'')+'>')+'</label>').join('')+'</div><div class="fbActions"><button class="primary" type="submit">Save Order</button><button class="secondary" type="button" id="fbCancel">Cancel</button></div></form></div>';
+ layer.innerHTML='<div class="fbDialog" role="dialog" aria-modal="true"><h2 style="margin:0 0 12px">'+(id?'Edit Facebook Order':'Add Facebook Order')+'</h2><form id="fbOrderForm"><div class="fbFields">'+FB_FIELDS.map(([key,title,type,opts])=>'<label class="'+(['address','details','other'].includes(key)?'fbWide':'')+'">'+title+(type==='select'?'<select name="'+key+'">'+opts.map(v=>'<option '+(x[key]===v?'selected':'')+'>'+fbText(v)+'</option>').join('')+'</select>':type==='textarea'?'<textarea name="'+key+'" rows="3">'+fbText(x[key])+'</textarea>':'<input name="'+key+'" type="'+type+'" '+(type==='number'?'min="0" step="0.01"':'')+' value="'+fbText(x[key])+'" '+(key==='name'?'required':'')+'>')+'</label>').join('')+'</div><div id="fbTotalsPreview" style="padding:12px;background:#eaf7ff;border-radius:8px;margin-top:12px"></div><div class="fbActions"><button class="primary" type="submit">Save Order</button><button class="secondary" type="button" id="fbCancel">Cancel</button></div></form></div>';
  document.body.append(layer);layer.querySelector('#fbCancel').onclick=()=>layer.remove();
+ const form=layer.querySelector('form'),field=k=>form.elements.namedItem(k);
+ const adjust=()=>{
+   const shipping=field('shipping').value,fulfillment=field('fulfillment');
+   if(shipping==='Shopee Checkout'||['JNT','Lalamove','Flash Express'].includes(shipping))fulfillment.value='Delivery';
+   if(fulfillment.value==='Pickup'){field('shipping').value='Not Selected';field('fee').value='0'}
+   const external=field('shipping').value==='Shopee Checkout',pickup=fulfillment.value==='Pickup';
+   field('shipping').closest('label').style.display=pickup?'none':'';
+   field('tracking').closest('label').style.display=pickup?'none':'';
+   field('fee').closest('label').style.display=(pickup||external)?'none':'';
+   const z={amount:field('amount').value,fee:field('fee').value,paidAmount:field('paidAmount').value,shipping:field('shipping').value,fulfillment:fulfillment.value};
+   layer.querySelector('#fbTotalsPreview').textContent='Total: '+fbCash(fbTotal(z))+'  |  Amount Paid: '+fbCash(z.paidAmount)+'  |  Balance: '+fbCash(fbBalance(z))+(external?'  |  Shopee shipping is excluded':'');
+ };
+ ['shipping','fulfillment','amount','fee','paidAmount'].forEach(k=>field(k).addEventListener('input',adjust));
+ adjust();
  layer.addEventListener('click',e=>{if(e.target===layer)layer.remove()});
  layer.querySelector('form').onsubmit=async e=>{
   e.preventDefault();const fd=new FormData(e.target),v={...(existing||{}),...Object.fromEntries(FB_FIELDS.map(([key])=>[key,String(fd.get(key)||'').trim()]))};
   if(!v.name){toast('Customer name is required');return}
   for(const n of ['amount','fee','paidAmount']){v[n]=Number(v[n]||0);if(!Number.isFinite(v[n])||v[n]<0){toast('Amount fields must be zero or greater');return}}
+  if(v.fulfillment==='Pickup'){v.shipping='Not Selected';v.tracking='';v.fee=0}
+  if(v.shipping==='Shopee Checkout'){v.fulfillment='Delivery';v.fee=0}
+  if(['JNT','Lalamove','Flash Express'].includes(v.shipping))v.fulfillment='Delivery';
+  if(v.paidAmount>fbTotal(v)){toast('Amount Paid cannot exceed Total.');return}
   v.id=id||('FB-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase());v.created=existing?.created||new Date().toISOString();
   if(await fbWrite('orders',v,v.id)){layer.remove();fbRender(document.getElementById('content'));toast('Facebook order saved online')}
  };
 }
 function fbExport(data){
  const keys=['id',...FB_FIELDS.map(x=>x[0]),'total','balance'];
- const rows=[keys,...data.map(x=>keys.map(k=>k==='total'?fbTotal(x):k==='balance'?Math.max(0,fbTotal(x)-Number(x.paidAmount||0)):x[k]??''))];
+ const rows=[keys,...data.map(x=>keys.map(k=>k==='total'?fbTotal(x):k==='balance'?fbBalance(x):x[k]??''))];
  const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""').replace(/^[=+\-@]/,"'")+'"').join(',')).join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}));a.download='Kzies-Facebook-Orders-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
