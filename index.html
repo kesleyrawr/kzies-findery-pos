@@ -1485,7 +1485,7 @@ function fbEdit(id){
  const form=layer.querySelector('form'),field=k=>form.elements.namedItem(k);
  const adjust=()=>{
    const shipping=field('shipping').value,fulfillment=field('fulfillment');
-   if(shipping==='Shopee Checkout'||['JNT','Lalamove','Flash Express'].includes(shipping))fulfillment.value='Delivery';
+   if(shipping==='Shopee Checkout'&&fulfillment.value!=='Pickup')fulfillment.value='Delivery';
    if(fulfillment.value==='Pickup'){field('shipping').value='Not Selected';field('fee').value='0'}
    const external=field('shipping').value==='Shopee Checkout',pickup=fulfillment.value==='Pickup';
    field('shipping').closest('label').style.display=pickup?'none':'';
@@ -1494,7 +1494,7 @@ function fbEdit(id){
    const z={amount:field('amount').value,fee:field('fee').value,paidAmount:field('paidAmount').value,shipping:field('shipping').value,fulfillment:fulfillment.value};
    layer.querySelector('#fbTotalsPreview').textContent='Total: '+fbCash(fbTotal(z))+'  |  Amount Paid: '+fbCash(z.paidAmount)+'  |  Balance: '+fbCash(fbBalance(z))+(external?'  |  Shopee shipping is excluded':'');
  };
- ['shipping','fulfillment','amount','fee','paidAmount'].forEach(k=>field(k).addEventListener('input',adjust));
+ field('shipping').addEventListener('change',()=>{if(field('shipping').value!=='Not Selected')field('fulfillment').value='Delivery';adjust()});['fulfillment','amount','fee','paidAmount'].forEach(k=>field(k).addEventListener('input',adjust));
  adjust();
  layer.addEventListener('click',e=>{if(e.target===layer)layer.remove()});
  layer.querySelector('form').onsubmit=async e=>{
