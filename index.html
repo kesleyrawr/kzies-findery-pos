@@ -1407,7 +1407,7 @@ async function fbCall(kind,action='list',id=null,payload=null){
 }
 async function fbCloudLoad(){
  const [orders,templates]=await Promise.all([fbCall('orders'),fbCall('templates')]);
- FB_CLOUD.orders=orders.items||[]; FB_CLOUD.templates=templates.items?.length?templates.items:FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body}));
+ FB_CLOUD.orders=orders.items||[]; FB_CLOUD.templates=templates.items?.length?templates.items:[];
  // Import device-only entries once, without overwriting existing cloud records
  for(const kind of ['orders','templates']){
   let local=[];
@@ -1418,6 +1418,7 @@ async function fbCloudLoad(){
    if(x.id&&!existing.has(x.id)){await fbCall(kind,'upsert',x.id,x);FB_CLOUD[kind].push(x);existing.add(x.id)}
   }
  }
+ if(!FB_CLOUD.templates.length)FB_CLOUD.templates=FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body}));
  FB_CLOUD.loaded=true;
 }
 async function fbEnsureLoaded(){
@@ -1445,7 +1446,7 @@ async function fbRender(c){
   if(!isOrders){
     const t=fbRead('templates',FB_DEFAULTS.map(([title,body],i)=>({id:'template-'+i,title,body})));
     document.getElementById('fbTemplateGrid').innerHTML=t.map((x,i)=>'<article class="fbTemplate"><input aria-label="Template name" data-fb-title="'+i+'" value="'+fbText(x.title)+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:7px"><textarea data-fb-body="'+i+'" aria-label="Template message">'+fbText(x.body)+'</textarea><div class="fbActions"><button class="primary" data-fb-copy="'+i+'">Copy Message</button><button class="secondary" data-fb-save="'+i+'">Save Template</button></div></article>').join('');
-    document.querySelectorAll('[data-fb-save]').forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.fbSave),arr=fbRead('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));arr[i]={title:document.querySelector('[data-fb-title="'+i+'"]').value,body:document.querySelector('[data-fb-body="'+i+'"]').value};if(await fbWrite('templates',arr[i],arr[i].id))toast('Template saved online')});
+    document.querySelectorAll('[data-fb-save]').forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.fbSave),arr=fbRead('templates',FB_DEFAULTS.map(([title,body])=>({title,body})));arr[i]={...arr[i],id:arr[i].id||'template-'+i,title:document.querySelector('[data-fb-title="'+i+'"]').value,body:document.querySelector('[data-fb-body="'+i+'"]').value};if(await fbWrite('templates',arr[i],arr[i].id))toast('Template saved online')});
     document.querySelectorAll('[data-fb-copy]').forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.fbCopy),v=document.querySelector('[data-fb-body="'+i+'"]').value;try{await navigator.clipboard.writeText(v);toast('Copied!')}catch{toast('Copy unavailable in this browser')}});
     document.getElementById('fbResetTemplates').onclick=async()=>{if(confirm('Restore all default templates?')){for(let i=0;i<FB_DEFAULTS.length;i++){const [title,body]=FB_DEFAULTS[i];await fbWrite('templates',{id:'template-'+i,title,body},'template-'+i)}fbRender(c)}};
     return;
