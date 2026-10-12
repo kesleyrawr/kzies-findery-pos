@@ -49,6 +49,20 @@
 @media(max-width:900px){.financeColumns{grid-template-columns:1fr}.financeHeroRow{grid-template-columns:1fr}.financeNetProfit{width:min(100%,300px);min-height:0;justify-self:center}}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(3,1fr)}.panel{grid-template-columns:1fr}.cart{order:-1}}@media(max-width:760px){.modalBg{padding:8px;place-items:center}.modal{width:100%;max-height:calc(100dvh - 16px);padding:16px;border-radius:14px}.modalHead{top:-16px;margin:-16px -16px 10px;padding:14px 16px 10px}.modalStickyAction{bottom:-16px;margin-bottom:-16px!important}.summaryRow{font-size:13px;align-items:flex-start}.summaryRow span{min-width:0}.summaryRow strong{white-space:normal;text-align:right}.paymentBox,.paySummary{padding:12px}.formGrid{grid-template-columns:1fr}.formGrid .full{grid-column:auto}.clock{min-width:0}.clock b{display:none}.pill{display:none}.side{position:fixed;bottom:0;left:0;right:0;top:auto;z-index:30;width:auto;height:auto;display:flex;overflow-x:auto;border-top:1px solid #334155;border-right:0;padding:6px}.nav{min-width:52px;justify-content:center}.nav span:last-child{display:none}.main{padding-bottom:82px}.grid{grid-template-columns:repeat(2,1fr)}.metricGrid{grid-template-columns:repeat(2,1fr)}}
 
+/* Shared tables: compact, readable wrapped headers across POS modules */
+.tableWrap .tbl thead th,
+.tbl thead th,
+table:not(.fbSheet table) thead th{
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:normal;
+  line-height:1.35;
+  vertical-align:middle;
+  min-width:70px;
+  max-width:160px;
+}
+.tableWrap .tbl thead th{padding:9px 10px}
+@media(max-width:700px){.tableWrap .tbl thead th,.tbl thead th{min-width:64px;padding:8px 7px}}
 /* Facebook Orders module */
 .fbToolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.fbToolbar input,.fbToolbar select{background:#fff;color:#172b44;border:1px solid #b8c8d7;border-radius:8px;padding:9px;max-width:100%}
 .fbSheet{overflow:auto;max-width:100%;background:#fff;border-radius:12px;border:1px solid #cbd5e1}.fbSheet table{border-collapse:collapse;min-width:1450px;width:100%;color:#182d43;font-size:12px}.fbSheet th{position:sticky;top:0;background:#edf2f8;z-index:1;text-align:center;white-space:normal;line-height:1.35;min-width:82px;max-width:132px;vertical-align:middle;overflow-wrap:break-word}.fbSheet th,.fbSheet td{border:1px solid #dce4ed;padding:9px;vertical-align:top}.fbSheet tbody tr:nth-child(even){background:#f8fafc}.fbSheet tbody tr:hover{background:#eef6ff}.fbTag{display:inline-block;background:#e8f0fd;border-radius:12px;padding:3px 8px;color:#194c88;font-weight:700}.fbModal{position:fixed;inset:0;background:#071323bf;display:flex;align-items:center;justify-content:center;z-index:100;padding:14px}.fbDialog{width:min(780px,100%);max-height:92vh;overflow:auto;background:#fff;color:#17314b;border-radius:16px;padding:20px}.fbFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fbFields label{font-size:12px;font-weight:700}.fbFields input,.fbFields textarea,.fbFields select{display:block;margin-top:5px;width:100%;padding:9px;border:1px solid #b8c8d7;border-radius:8px;background:#fff;color:#123}.fbWide{grid-column:1/-1}.fbActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.fbTemplates{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.fbTemplate{background:#fff;color:#17314b;padding:16px;border-radius:13px;border:1px solid #ccd9e4}.fbTemplate textarea{width:100%;min-height:155px;padding:9px;border:1px solid #b7c8da;border-radius:8px}.fbSmall{font-size:12px;color:#9ab0c4}.fbDialog .fbSmall{color:#52657b}@media(max-width:600px){.fbFields{grid-template-columns:1fr}}
