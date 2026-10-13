@@ -1515,7 +1515,7 @@ function fbEdit(id){
    field('fee').closest('label').style.display=pickup?'none':'';
    field('shippingPayer').closest('label').style.display=(pickup||external)?'none':'';
    const z={amount:field('amount').value,fee:field('fee').value,paidAmount:field('paidAmount').value,shipping:field('shipping').value,shippingPayer:field('shippingPayer').value,fulfillment:fulfillment.value};
-   layer.querySelector('#fbTotalsPreview').textContent='Total: '+fbCash(fbTotal(z))+'  |  Amount Paid: '+fbCash(z.paidAmount)+'  |  Balance: '+fbCash(fbBalance(z))+(external?'  |  Shopee shipping is excluded':'');
+   layer.querySelector('#fbTotalsPreview').textContent='Total payable to shop: '+fbCash(fbTotal(z))+'  |  Amount Paid: '+fbCash(z.paidAmount)+'  |  Balance: '+fbCash(fbBalance(z))+(Number(z.paidAmount)>fbTotal(z)&&Number(z.paidAmount)<=Number(z.amount||0)+Number(z.fee||0)?'  |  Payment includes shipping: choose Customer - Paid to Shop':'')+(external?'  |  Shopee shipping is excluded':'');
  };
  field('shipping').addEventListener('change',()=>{if(field('shipping').value!=='Not Selected')field('fulfillment').value='Delivery';adjust()});['fulfillment','amount','fee','shippingPayer','paidAmount'].forEach(k=>field(k).addEventListener('input',adjust));
  adjust();
@@ -1527,7 +1527,13 @@ function fbEdit(id){
   if(v.fulfillment==='Pickup'){v.shipping='Not Selected';v.tracking='';v.fee=0}
   if(v.shipping==='Shopee Checkout'){v.fulfillment='Delivery';v.shippingPayer='Customer - Paid to Courier'}
   if(['JNT','Lalamove','Flash Express'].includes(v.shipping))v.fulfillment='Delivery';
-  if(v.paidAmount>fbTotal(v)){toast('Amount Paid cannot exceed Total.');return}
+  if(v.paidAmount>fbTotal(v)){
+    const gross=Number(v.amount||0)+Number(v.fee||0);
+    if(v.fulfillment!=='Pickup'&&v.shipping!=='Shopee Checkout'&&v.shippingPayer!=='Customer - Paid to Shop'&&v.paidAmount<=gross){
+      if(!confirm('Amount Paid includes the shipping fee. Change Shipping Fee Paid By to "Customer - Paid to Shop" and save this order?'))return;
+      v.shippingPayer='Customer - Paid to Shop';
+    }else{toast('Amount Paid exceeds Total. Please verify the amounts.');return}
+  }
   v.id=id||('FB-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase());v.created=existing?.created||new Date().toISOString();
   if(await fbWrite('orders',v,v.id)){layer.remove();fbRender(document.getElementById('content'));toast('Facebook order saved online')}
  };
